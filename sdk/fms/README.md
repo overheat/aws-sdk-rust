@@ -5,7 +5,7 @@ feedback purposes only. Do not use this SDK for production workloads.**
 
 This is the _Firewall Manager API Reference_. This guide is for developers who need detailed information about the Firewall Manager API actions, data types, and errors. For detailed information about Firewall Manager features, see the [Firewall Manager Developer Guide](https://docs.aws.amazon.com/waf/latest/developerguide/fms-chapter.html).
 
-Some API actions require explicit resource permissions. For information, see the developer guide topic [Firewall Manager required permissions for API actions](https://docs.aws.amazon.com/waf/latest/developerguide/fms-api-permissions-ref.html).
+Some API actions require explicit resource permissions. For information, see the developer guide topic [Service roles for Firewall Manager](https://docs.aws.amazon.com/waf/latest/developerguide/fms-security_iam_service-with-iam.html#fms-security_iam_service-with-iam-roles-service).
 
 ## Getting Started
 
@@ -18,20 +18,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-fms = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-fms = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_fms as fms;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), fms::Error> {
     let config = aws_config::load_from_env().await;
-    let client = fms::Client::new(&config);
+    let client = aws_sdk_fms::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -51,7 +51,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

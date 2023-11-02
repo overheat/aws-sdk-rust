@@ -3,9 +3,9 @@
 **Please Note: The SDK is currently in Developer Preview and is intended strictly for
 feedback purposes only. Do not use this SDK for production workloads.**
 
-Amazon Web Services Single Sign On Portal is a web service that makes it easy for you to assign user access to Amazon Web Services SSO resources such as the AWS access portal. Users can get Amazon Web Services account applications and roles assigned to them and get federated into the application.
+AWS IAM Identity Center (successor to AWS Single Sign-On) Portal is a web service that makes it easy for you to assign user access to IAM Identity Center resources such as the AWS access portal. Users can get AWS account applications and roles assigned to them and get federated into the application.
 
-This reference guide describes the Amazon Web Services SSO Portal operations that you can call programatically and includes detailed information on data types and errors.
+This reference guide describes the IAM Identity Center Portal operations that you can call programatically and includes detailed information on data types and errors.
 
 ## Getting Started
 
@@ -18,20 +18,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-sso = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-sso = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,ignore
 use aws_sdk_sso as sso;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), sso::Error> {
     let config = aws_config::load_from_env().await;
-    let client = sso::Client::new(&config);
+    let client = aws_sdk_sso::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -51,7 +51,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

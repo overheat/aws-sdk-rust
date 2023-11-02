@@ -3,11 +3,9 @@
 **Please Note: The SDK is currently in Developer Preview and is intended strictly for
 feedback purposes only. Do not use this SDK for production workloads.**
 
-Amazon Connect is a cloud-based contact center solution that makes it easy to set up and manage a customer contact center and provide reliable customer engagement at any scale.
+Amazon Connect is an easy-to-use omnichannel cloud contact center service that enables companies of any size to deliver superior customer service at a lower cost. Amazon Connect communications capabilities make it easy for companies to deliver personalized interactions across communication channels, including chat.
 
-Amazon Connect enables customer contacts through voice or chat.
-
-The APIs described here are used by chat participants, such as agents and customers.
+Use the Amazon Connect Participant Service to manage participants (for example, agents, customers, and managers listening in), and to send messages and events within a chat contact. The APIs in the service enable the following: sending chat messages, attachment sharing, managing a participant's connection state and message events, and retrieving chat transcripts.
 
 ## Getting Started
 
@@ -20,20 +18,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-connectparticipant = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-connectparticipant = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_connectparticipant as connectparticipant;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), connectparticipant::Error> {
     let config = aws_config::load_from_env().await;
-    let client = connectparticipant::Client::new(&config);
+    let client = aws_sdk_connectparticipant::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -53,7 +51,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

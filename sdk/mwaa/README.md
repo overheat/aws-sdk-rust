@@ -3,7 +3,7 @@
 **Please Note: The SDK is currently in Developer Preview and is intended strictly for
 feedback purposes only. Do not use this SDK for production workloads.**
 
-This section contains the Amazon Managed Workflows for Apache Airflow (MWAA) API reference documentation. For more information, see [What Is Amazon MWAA?](https://docs.aws.amazon.com/mwaa/latest/userguide/what-is-mwaa.html).
+This section contains the Amazon Managed Workflows for Apache Airflow (MWAA) API reference documentation. For more information, see [What is Amazon MWAA?](https://docs.aws.amazon.com/mwaa/latest/userguide/what-is-mwaa.html).
 
 __Endpoints__
   - api.airflow.{region}.amazonaws.com - This endpoint is used for environment management.
@@ -38,20 +38,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-mwaa = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-mwaa = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_mwaa as mwaa;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), mwaa::Error> {
     let config = aws_config::load_from_env().await;
-    let client = mwaa::Client::new(&config);
+    let client = aws_sdk_mwaa::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -71,7 +71,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

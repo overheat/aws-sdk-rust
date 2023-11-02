@@ -5,7 +5,7 @@ feedback purposes only. Do not use this SDK for production workloads.**
 
 Welcome to the Routing Control (Recovery Cluster) API Reference Guide for Amazon Route 53 Application Recovery Controller.
 
-With Route 53 ARC, you can use routing control with extreme reliability to recover applications by rerouting traffic across Availability Zones or Amazon Web Services Regions. Routing controls are simple on/off switches hosted on a highly available cluster in Route 53 ARC. A cluster provides a set of five redundant Regional endpoints against which you can run API calls to get or update the state of routing controls. To implement failover, you set one routing control On and another one Off, to reroute traffic from one Availability Zone or Amazon Web Services Region to another.
+With Route 53 ARC, you can use routing control with extreme reliability to recover applications by rerouting traffic across Availability Zones or Amazon Web Services Regions. Routing controls are simple on/off switches hosted on a highly available cluster in Route 53 ARC. A cluster provides a set of five redundant Regional endpoints against which you can run API calls to get or update the state of routing controls. To implement failover, you set one routing control to ON and another one to OFF, to reroute traffic from one Availability Zone or Amazon Web Services Region to another.
 
 _Be aware that you must specify a Regional endpoint for a cluster when you work with API cluster operations to get or update routing control states in Route 53 ARC._ In addition, you must specify the US West (Oregon) Region for Route 53 ARC API calls. For example, use the parameter --region us-west-2 with AWS CLI commands. For more information, see [Get and update routing control states using the API](https://docs.aws.amazon.com/r53recovery/latest/dg/routing-control.update.api.html) in the Amazon Route 53 Application Recovery Controller Developer Guide.
 
@@ -28,20 +28,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-route53recoverycluster = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-route53recoverycluster = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_route53recoverycluster as route53recoverycluster;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), route53recoverycluster::Error> {
     let config = aws_config::load_from_env().await;
-    let client = route53recoverycluster::Client::new(&config);
+    let client = aws_sdk_route53recoverycluster::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -61,7 +61,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

@@ -3,204 +3,73 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#![warn(
-    missing_debug_implementations,
-    missing_docs,
-    rustdoc::all,
-    unreachable_pub
-)]
+//TODO(runtimeCratesVersioningCleanup): Keep the following deprecated type aliases for at least
+// one release since 0.56.1 and then remove this module.
 
-//! `Result` wrapper types for [success](SdkSuccess) and [failure](SdkError) responses.
+//! Types for [`error`](aws_smithy_runtime_api::client::result::SdkError) responses.
 
-use crate::operation;
-use aws_smithy_types::retry::ErrorKind;
-use std::error::Error;
-use std::fmt;
-use std::fmt::{Debug, Display, Formatter};
+/// Builders for `SdkError` variant context.
+pub mod builders {
+    /// Builder for [`ConstructionFailure`](aws_smithy_runtime_api::client::result::ConstructionFailure).
+    #[deprecated(
+        note = "Moved to `aws_smithy_runtime_api::client::result::builders::ConstructionFailureBuilder`."
+    )]
+    pub type ConstructionFailureBuilder =
+        aws_smithy_runtime_api::client::result::builders::ConstructionFailureBuilder;
 
-type BoxError = Box<dyn Error + Send + Sync>;
+    /// Builder for [`TimeoutError`](aws_smithy_runtime_api::client::result::TimeoutError).
+    #[deprecated(
+        note = "Moved to `aws_smithy_runtime_api::client::result::builders::TimeoutErrorBuilder`."
+    )]
+    pub type TimeoutErrorBuilder =
+        aws_smithy_runtime_api::client::result::builders::TimeoutErrorBuilder;
 
-/// Successful SDK Result
-#[derive(Debug)]
-pub struct SdkSuccess<O> {
-    /// Raw Response from the service. (e.g. Http Response)
-    pub raw: operation::Response,
+    /// Builder for [`DispatchFailure`](aws_smithy_runtime_api::client::result::DispatchFailure).
+    #[deprecated(
+        note = "Moved to `aws_smithy_runtime_api::client::result::builders::DispatchFailureBuilder`."
+    )]
+    pub type DispatchFailureBuilder =
+        aws_smithy_runtime_api::client::result::builders::DispatchFailureBuilder;
 
-    /// Parsed response from the service
-    pub parsed: O,
+    /// Builder for [`ResponseError`](aws_smithy_runtime_api::client::result::ResponseError).
+    #[deprecated(
+        note = "Moved to `aws_smithy_runtime_api::client::result::builders::ResponseErrorBuilder`."
+    )]
+    pub type ResponseErrorBuilder<R> =
+        aws_smithy_runtime_api::client::result::builders::ResponseErrorBuilder<R>;
+
+    /// Builder for [`ServiceError`](aws_smithy_runtime_api::client::result::ServiceError).
+    #[deprecated(
+        note = "Moved to `aws_smithy_runtime_api::client::result::builders::ServiceErrorBuilder`."
+    )]
+    pub type ServiceErrorBuilder<E, R> =
+        aws_smithy_runtime_api::client::result::builders::ServiceErrorBuilder<E, R>;
 }
+
+/// Error context for [`aws_smithy_runtime_api::client::result::ConstructionFailure`]
+#[deprecated(note = "Moved to `aws_smithy_runtime_api::client::result::ConstructionFailure`.")]
+pub type ConstructionFailure = aws_smithy_runtime_api::client::result::ConstructionFailure;
+
+/// Error context for [`aws_smithy_runtime_api::client::result::TimeoutError`]
+#[deprecated(note = "Moved to `aws_smithy_runtime_api::client::result::TimeoutError`.")]
+pub type TimeoutError = aws_smithy_runtime_api::client::result::TimeoutError;
+
+/// Error context for [`aws_smithy_runtime_api::client::result::DispatchFailure`]
+#[deprecated(note = "Moved to `aws_smithy_runtime_api::client::result::DispatchFailure`.")]
+pub type DispatchFailure = aws_smithy_runtime_api::client::result::DispatchFailure;
+
+/// Error context for [`aws_smithy_runtime_api::client::result::ResponseError`]
+#[deprecated(note = "Moved to `aws_smithy_runtime_api::client::result::ResponseError`.")]
+pub type ResponseError<R> = aws_smithy_runtime_api::client::result::ResponseError<R>;
 
 /// Failed SDK Result
-#[derive(Debug)]
-pub enum SdkError<E, R = operation::Response> {
-    /// The request failed during construction. It was not dispatched over the network.
-    ConstructionFailure(BoxError),
+#[deprecated(note = "Moved to `aws_smithy_runtime_api::client::result::ServiceError`.")]
+pub type ServiceError<E, R> = aws_smithy_runtime_api::client::result::ServiceError<E, R>;
 
-    /// The request failed due to a timeout. The request MAY have been sent and received.
-    TimeoutError(BoxError),
-
-    /// The request failed during dispatch. An HTTP response was not received. The request MAY
-    /// have been sent.
-    DispatchFailure(ConnectorError),
-
-    /// A response was received but it was not parseable according the the protocol (for example
-    /// the server hung up while the body was being read)
-    ResponseError {
-        /// Error encountered while parsing the response
-        err: BoxError,
-        /// Raw response that was available
-        raw: R,
-    },
-
-    /// An error response was received from the service
-    ServiceError {
-        /// Modeled service error
-        err: E,
-        /// Raw response from the service
-        raw: R,
-    },
-}
+/// Failed SDK Result
+#[deprecated(note = "Moved to `aws_smithy_runtime_api::client::result::SdkError`.")]
+pub type SdkError<E, R> = aws_smithy_runtime_api::client::result::SdkError<E, R>;
 
 /// Error from the underlying Connector
-///
-/// Connector exists to attach a `ConnectorErrorKind` to what would otherwise be an opaque `Box<dyn Error>`
-/// that comes off a potentially generic or dynamic connector.
-/// The attached `kind` is used to determine what retry behavior should occur (if any) based on the
-/// connector error.
-#[derive(Debug)]
-pub struct ConnectorError {
-    err: BoxError,
-    kind: ConnectorErrorKind,
-}
-
-impl Display for ConnectorError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.kind, self.err)
-    }
-}
-
-impl Error for ConnectorError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        Some(self.err.as_ref())
-    }
-}
-
-impl ConnectorError {
-    /// Construct a [`ConnectorError`] from an error caused by a timeout
-    ///
-    /// Timeout errors are typically retried on a new connection.
-    pub fn timeout(err: BoxError) -> Self {
-        Self {
-            err,
-            kind: ConnectorErrorKind::Timeout,
-        }
-    }
-
-    /// Construct a [`ConnectorError`] from an error caused by the user (e.g. invalid HTTP request)
-    pub fn user(err: BoxError) -> Self {
-        Self {
-            err,
-            kind: ConnectorErrorKind::User,
-        }
-    }
-
-    /// Construct a [`ConnectorError`] from an IO related error (e.g. socket hangup)
-    pub fn io(err: BoxError) -> Self {
-        Self {
-            err,
-            kind: ConnectorErrorKind::Io,
-        }
-    }
-
-    /// Construct a [`ConnectorError`] from an different unclassified error.
-    ///
-    /// Optionally, an explicit `Kind` may be passed.
-    pub fn other(err: BoxError, kind: Option<ErrorKind>) -> Self {
-        Self {
-            err,
-            kind: ConnectorErrorKind::Other(kind),
-        }
-    }
-
-    /// Returns true if the error is an IO error
-    pub fn is_io(&self) -> bool {
-        matches!(self.kind, ConnectorErrorKind::Io)
-    }
-
-    /// Returns true if the error is an timeout error
-    pub fn is_timeout(&self) -> bool {
-        matches!(self.kind, ConnectorErrorKind::Timeout)
-    }
-
-    /// Returns true if the error is a user error
-    pub fn is_user(&self) -> bool {
-        matches!(self.kind, ConnectorErrorKind::User)
-    }
-
-    /// Returns the optional error kind associated with an unclassified error
-    pub fn is_other(&self) -> Option<ErrorKind> {
-        match &self.kind {
-            ConnectorErrorKind::Other(ek) => *ek,
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug)]
-enum ConnectorErrorKind {
-    /// A timeout occurred while processing the request
-    Timeout,
-
-    /// A user-caused error (e.g. invalid HTTP request)
-    User,
-
-    /// Socket/IO error
-    Io,
-
-    /// An unclassified Error with an explicit error kind
-    Other(Option<ErrorKind>),
-}
-
-impl Display for ConnectorErrorKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            ConnectorErrorKind::Timeout => write!(f, "timeout"),
-            ConnectorErrorKind::User => write!(f, "user error"),
-            ConnectorErrorKind::Io => write!(f, "io error"),
-            ConnectorErrorKind::Other(Some(kind)) => write!(f, "{:?}", kind),
-            ConnectorErrorKind::Other(None) => write!(f, "other"),
-        }
-    }
-}
-
-impl<E, R> Display for SdkError<E, R>
-where
-    E: Error,
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            SdkError::ConstructionFailure(err) => write!(f, "failed to construct request: {}", err),
-            SdkError::TimeoutError(err) => write!(f, "request has timed out: {}", err),
-            SdkError::DispatchFailure(err) => Display::fmt(&err, f),
-            SdkError::ResponseError { err, .. } => Display::fmt(&err, f),
-            SdkError::ServiceError { err, .. } => Display::fmt(&err, f),
-        }
-    }
-}
-
-impl<E, R> Error for SdkError<E, R>
-where
-    E: Error + 'static,
-    R: Debug,
-{
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        use SdkError::*;
-        match self {
-            ConstructionFailure(err) | TimeoutError(err) | ResponseError { err, .. } => {
-                Some(err.as_ref())
-            }
-            DispatchFailure(err) => Some(err),
-            ServiceError { err, .. } => Some(err),
-        }
-    }
-}
+#[deprecated(note = "Moved to `aws_smithy_runtime_api::client::result::ConnectorError`.")]
+pub type ConnectorError = aws_smithy_runtime_api::client::result::ConnectorError;

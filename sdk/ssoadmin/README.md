@@ -3,11 +3,11 @@
 **Please Note: The SDK is currently in Developer Preview and is intended strictly for
 feedback purposes only. Do not use this SDK for production workloads.**
 
-Amazon Web Services Single Sign On helps you securely create, or connect, your workforce identities and manage their access centrally across Amazon Web Services accounts and applications. Amazon Web Services SSO is the recommended approach for workforce authentication and authorization in Amazon Web Services, for organizations of any size and type.
+IAM Identity Center (successor to Single Sign-On) helps you securely create, or connect, your workforce identities and manage their access centrally across Amazon Web Services accounts and applications. IAM Identity Center is the recommended approach for workforce authentication and authorization in Amazon Web Services, for organizations of any size and type.
 
-This reference guide provides information on single sign-on operations which could be used for access management of Amazon Web Services accounts. For information about Amazon Web Services SSO features, see the [Amazon Web Services SSO User Guide](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html).
+This reference guide provides information on single sign-on operations which could be used for access management of Amazon Web Services accounts. For information about IAM Identity Center features, see the [IAM Identity Center User Guide](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html).
 
-Many operations in the Amazon Web Services SSO APIs rely on identifiers for users and groups, known as principals. For more information about how to work with principals and principal IDs in Amazon Web Services SSO, see the [Identity Store API Reference](https://docs.aws.amazon.com/singlesignon/latest/IdentityStoreAPIReference/welcome.html).
+Many operations in the IAM Identity Center APIs rely on identifiers for users and groups, known as principals. For more information about how to work with principals and principal IDs in IAM Identity Center, see the [Identity Store API Reference](https://docs.aws.amazon.com/singlesignon/latest/IdentityStoreAPIReference/welcome.html).
 
 ## Getting Started
 
@@ -20,20 +20,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-ssoadmin = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-ssoadmin = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_ssoadmin as ssoadmin;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), ssoadmin::Error> {
     let config = aws_config::load_from_env().await;
-    let client = ssoadmin::Client::new(&config);
+    let client = aws_sdk_ssoadmin::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -53,7 +53,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

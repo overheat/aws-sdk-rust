@@ -3,7 +3,13 @@
 **Please Note: The SDK is currently in Developer Preview and is intended strictly for
 feedback purposes only. Do not use this SDK for production workloads.**
 
-The Health API provides programmatic access to the Health information that appears in the [Personal Health Dashboard](https://phd.aws.amazon.com/phd/home#/). You can use the API operations to get information about events that might affect your Amazon Web Services services and resources.
+The Health API provides access to the Health information that appears in the [Health Dashboard](https://health.aws.amazon.com/health/home). You can use the API operations to get information about events that might affect your Amazon Web Services and resources.
+
+You must have a Business, Enterprise On-Ramp, or Enterprise Support plan from [Amazon Web Services Support](http://aws.amazon.com/premiumsupport/) to use the Health API. If you call the Health API from an Amazon Web Services account that doesn't have a Business, Enterprise On-Ramp, or Enterprise Support plan, you receive a SubscriptionRequiredException error.
+
+For API access, you need an access key ID and a secret access key. Use temporary credentials instead of long-term access keys when possible. Temporary credentials include an access key ID, a secret access key, and a security token that indicates when the credentials expire. For more information, see [Best practices for managing Amazon Web Services access keys](https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html) in the _Amazon Web Services General Reference_.
+
+You can use the Health endpoint health.us-east-1.amazonaws.com (HTTPS) to call the Health API operations. Health supports a multi-Region application architecture and has two regional endpoints in an active-passive configuration. You can use the high availability endpoint example to determine which Amazon Web Services Region is active, so that you can get the latest information from the API. For more information, see [Accessing the Health API](https://docs.aws.amazon.com/health/latest/ug/health-api.html) in the _Health User Guide_.
 
 For authentication of requests, Health uses the [Signature Version 4 Signing Process](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
@@ -20,20 +26,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-health = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-health = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_health as health;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), health::Error> {
     let config = aws_config::load_from_env().await;
-    let client = health::Client::new(&config);
+    let client = aws_sdk_health::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -53,7 +59,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

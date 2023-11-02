@@ -13,9 +13,9 @@ All KMS API calls must be signed and be transmitted using Transport Layer Securi
 
 __Signing Requests__
 
-Requests must be signed by using an access key ID and a secret access key. We strongly recommend that you _do not_ use your Amazon Web Services account (root) access key ID and secret key for everyday work with KMS. Instead, use the access key ID and secret access key for an IAM user. You can also use the Amazon Web Services Security Token Service to generate temporary security credentials that you can use to sign requests.
+Requests must be signed using an access key ID and a secret access key. We strongly recommend that you do not use your Amazon Web Services account root access key ID and secret access key for everyday work. You can use the access key ID and secret access key for an IAM user or you can use the Security Token Service (STS) to generate temporary security credentials and use those to sign requests.
 
-All KMS operations require [Signature Version 4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
+All KMS requests must be signed with [Signature Version 4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
 __Logging API Requests__
 
@@ -47,20 +47,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-kms = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-kms = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_kms as kms;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), kms::Error> {
     let config = aws_config::load_from_env().await;
-    let client = kms::Client::new(&config);
+    let client = aws_sdk_kms::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -80,7 +80,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

@@ -15,7 +15,8 @@ __Notes on terminology:__
 
 __Resources__
 
-The following resource is part of Amazon IVS Chat:
+The following resources are part of Amazon IVS Chat:
+  - __LoggingConfiguration__ — A configuration that allows customers to store and record sent messages in a chat room. See the Logging Configuration endpoints for more information.
   - __Room__ — The central Amazon IVS Chat resource through which clients connect to and exchange chat messages. See the Room endpoints for more information.
 
 __Tagging__
@@ -46,13 +47,17 @@ For more information:
   - Authentication and generating signatures — See [Authenticating Requests (Amazon Web Services Signature Version 4)](https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html) in the _Amazon Web Services General Reference_.
   - Managing Amazon IVS permissions — See [Identity and Access Management](https://docs.aws.amazon.com/ivs/latest/userguide/security-iam.html) on the Security page of the _Amazon IVS User Guide_.
 
+__Amazon Resource Names (ARNs)__
+
+ARNs uniquely identify AWS resources. An ARN is required when you need to specify a resource unambiguously across all of AWS, such as in IAM policies and API calls. For more information, see [Amazon Resource Names](https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) in the _AWS General Reference_.
+
 __Messaging Endpoints__
   - DeleteMessage — Sends an event to a specific room which directs clients to delete a specific message; that is, unrender it from view and delete it from the client’s chat history. This event’s EventName is aws:DELETE_MESSAGE. This replicates the [DeleteMessage](https://docs.aws.amazon.com/ivs/latest/chatmsgapireference/actions-deletemessage-publish.html) WebSocket operation in the Amazon IVS Chat Messaging API.
   - DisconnectUser — Disconnects all connections using a specified user ID from a room. This replicates the [DisconnectUser](https://docs.aws.amazon.com/ivs/latest/chatmsgapireference/actions-disconnectuser-publish.html) WebSocket operation in the Amazon IVS Chat Messaging API.
   - SendEvent — Sends an event to a room. Use this within your application’s business logic to send events to clients of a room; e.g., to notify clients to change the way the chat UI is rendered.
 
 __Chat Token Endpoint__
-  - CreateChatToken — Creates an encrypted token that is used to establish an individual WebSocket connection to a room. The token is valid for one minute, and a connection (session) established with the token is valid for the specified duration.
+  - CreateChatToken — Creates an encrypted token that is used by a chat participant to establish an individual WebSocket chat connection to a room. When the token is used to connect to chat, the connection is valid for the session duration specified in the request. The token becomes invalid at the token-expiration timestamp included in the response.
 
 __Room Endpoints__
   - CreateRoom — Creates a room that allows clients to connect and pass messages.
@@ -60,6 +65,13 @@ __Room Endpoints__
   - GetRoom — Gets the specified room.
   - ListRooms — Gets summary information about all your rooms in the AWS region where the API request is processed.
   - UpdateRoom — Updates a room’s configuration.
+
+__Logging Configuration Endpoints__
+  - CreateLoggingConfiguration — Creates a logging configuration that allows clients to store and record sent messages.
+  - DeleteLoggingConfiguration — Deletes the specified logging configuration.
+  - GetLoggingConfiguration — Gets the specified logging configuration.
+  - ListLoggingConfigurations — Gets summary information about all your logging configurations in the AWS region where the API request is processed.
+  - UpdateLoggingConfiguration — Updates a specified logging configuration.
 
 __Tags Endpoints__
   - ListTagsForResource — Gets information about AWS tags for the specified ARN.
@@ -79,20 +91,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-ivschat = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-ivschat = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_ivschat as ivschat;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), ivschat::Error> {
     let config = aws_config::load_from_env().await;
-    let client = ivschat::Client::new(&config);
+    let client = aws_sdk_ivschat::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -112,7 +124,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

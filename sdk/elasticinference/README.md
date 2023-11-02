@@ -5,6 +5,8 @@ feedback purposes only. Do not use this SDK for production workloads.**
 
 Elastic Inference public APIs.
 
+February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
+
 ## Getting Started
 
 > Examples are available for many services and operations, check out the
@@ -16,20 +18,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-elasticinference = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-elasticinference = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_elasticinference as elasticinference;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), elasticinference::Error> {
     let config = aws_config::load_from_env().await;
-    let client = elasticinference::Client::new(&config);
+    let client = aws_sdk_elasticinference::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -49,7 +51,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

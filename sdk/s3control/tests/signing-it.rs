@@ -3,54 +3,41 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use aws_http::user_agent::AwsUserAgent;
-use aws_sdk_s3control::operation::ListAccessPoints;
-use aws_sdk_s3control::{Credentials, Region};
-use aws_smithy_client::test_connection::TestConnection;
-use aws_smithy_http::body::SdkBody;
-use std::time::{Duration, UNIX_EPOCH};
-
-use aws_sdk_s3control::middleware::DefaultMiddleware;
-use aws_smithy_client::Client as CoreClient;
-pub type Client<C> = CoreClient<C, DefaultMiddleware>;
+use aws_credential_types::provider::SharedCredentialsProvider;
+use aws_sdk_s3control::config::{Credentials, Region};
+use aws_sdk_s3control::{Client, Config};
+use aws_smithy_runtime::client::http::test_util::{ReplayEvent, StaticReplayClient};
+use aws_smithy_types::body::SdkBody;
 
 #[tokio::test]
-async fn test_signer() -> Result<(), aws_sdk_s3control::Error> {
-    let creds = Credentials::new(
-        "ANOTREAL",
-        "notrealrnrELgWzOk3IfjzDKtFBhDby",
-        Some("notarealsessiontoken".to_string()),
-        None,
-        "test",
-    );
-    let conf = aws_sdk_s3control::Config::builder()
-        .credentials_provider(creds)
-        .region(Region::new("us-east-1"))
-        .build();
-    let conn = TestConnection::new(vec![(
+async fn test_signer() {
+    let http_client = StaticReplayClient::new(vec![ReplayEvent::new(
         http::Request::builder()
             .header("authorization",
-                    "AWS4-HMAC-SHA256 Credential=ANOTREAL/20211112/us-east-1/s3/aws4_request, \
-                    SignedHeaders=host;x-amz-account-id;x-amz-content-sha256;x-amz-date;x-amz-security-token;x-amz-user-agent, \
-                    Signature=ac58c2246428af711ab7bca30c704a2b6a5fd7451cf83f3bceff177f1636e277")
+                    "AWS4-HMAC-SHA256 Credential=ANOTREAL/20090213/us-east-1/s3/aws4_request, \
+                    SignedHeaders=host;x-amz-account-id;x-amz-content-sha256;x-amz-date;x-amz-user-agent, \
+                    Signature=0102a74cb220f8445c4efada17660572ff813e07b524032ec831e8c2514be903")
             .uri("https://test-bucket.s3-control.us-east-1.amazonaws.com/v20180820/accesspoint")
             .body(SdkBody::empty())
             .unwrap(),
-        http::Response::builder().status(200).body("").unwrap(),
+        http::Response::builder().status(200).body(SdkBody::empty()).unwrap(),
     )]);
-    let client = Client::new(conn.clone());
-    let mut op = ListAccessPoints::builder()
-        .account_id("test-bucket")
-        .build()
-        .unwrap()
-        .make_operation(&conf)
-        .await
-        .unwrap();
-    op.properties_mut()
-        .insert(UNIX_EPOCH + Duration::from_secs(1636751225));
-    op.properties_mut().insert(AwsUserAgent::for_tests());
+    let config = Config::builder()
+        .credentials_provider(SharedCredentialsProvider::new(
+            Credentials::for_tests_with_session_token(),
+        ))
+        .http_client(http_client.clone())
+        .region(Region::new("us-east-1"))
+        .with_test_defaults()
+        .build();
+    let client = Client::from_conf(config);
 
-    client.call(op).await.expect_err("empty response");
-    conn.assert_requests_match(&[]);
-    Ok(())
+    let _ = client
+        .list_access_points()
+        .account_id("test-bucket")
+        .send()
+        .await
+        .expect_err("empty response");
+
+    http_client.assert_requests_match(&[]);
 }

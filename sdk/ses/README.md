@@ -5,6 +5,12 @@ feedback purposes only. Do not use this SDK for production workloads.**
 
 This document contains reference information for the [Amazon Simple Email Service](https://aws.amazon.com/ses/) (Amazon SES) API, version 2010-12-01. This document is best used in conjunction with the [Amazon SES Developer Guide](https://docs.aws.amazon.com/ses/latest/DeveloperGuide/Welcome.html).
 
+This documentation contains reference information related to the following:
+  - [Amazon SES API Actions](https://docs.aws.amazon.com/ses/latest/APIReference/API_Operations.html)
+  - [Amazon SES API Data Types](https://docs.aws.amazon.com/ses/latest/APIReference/API_Types.html)
+  - [Common Parameters](https://docs.aws.amazon.com/ses/latest/APIReference/CommonParameters.html)
+  - [Common Errors](https://docs.aws.amazon.com/ses/latest/APIReference/CommonErrors.html)
+
 ## Getting Started
 
 > Examples are available for many services and operations, check out the
@@ -16,20 +22,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-ses = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-ses = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_ses as ses;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), ses::Error> {
     let config = aws_config::load_from_env().await;
-    let client = ses::Client::new(&config);
+    let client = aws_sdk_ses::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -49,7 +55,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

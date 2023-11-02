@@ -7,13 +7,14 @@
 
 use crate::buf::count::CountBuf;
 use crate::buf::crc::{CrcBuf, CrcBufMut};
-use crate::error::Error;
+use crate::error::{Error, ErrorKind};
 use crate::str_bytes::StrBytes;
 use bytes::{Buf, BufMut, Bytes};
 use std::convert::{TryFrom, TryInto};
 use std::error::Error as StdError;
 use std::fmt;
 use std::mem::size_of;
+use std::sync::{mpsc, Mutex};
 
 const PRELUDE_LENGTH_BYTES: u32 = 3 * size_of::<u32>() as u32;
 const PRELUDE_LENGTH_BYTES_USIZE: usize = PRELUDE_LENGTH_BYTES as usize;
@@ -32,6 +33,99 @@ pub trait SignMessage: fmt::Debug {
     /// Return `Some(_)` to send a signed last empty message, before completing the stream.
     /// Return `None` to not send one and terminate the stream immediately.
     fn sign_empty(&mut self) -> Option<Result<Message, SignMessageError>>;
+}
+
+/// A sender that gets placed in the request config to wire up an event stream signer after signing.
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct DeferredSignerSender(Mutex<mpsc::Sender<Box<dyn SignMessage + Send + Sync>>>);
+
+impl DeferredSignerSender {
+    /// Creates a new `DeferredSignerSender`
+    fn new(tx: mpsc::Sender<Box<dyn SignMessage + Send + Sync>>) -> Self {
+        Self(Mutex::new(tx))
+    }
+
+    /// Sends a signer on the channel
+    pub fn send(
+        &self,
+        signer: Box<dyn SignMessage + Send + Sync>,
+    ) -> Result<(), mpsc::SendError<Box<dyn SignMessage + Send + Sync>>> {
+        self.0.lock().unwrap().send(signer)
+    }
+}
+
+impl Storable for DeferredSignerSender {
+    type Storer = StoreReplace<Self>;
+}
+
+/// Deferred event stream signer to allow a signer to be wired up later.
+///
+/// HTTP request signing takes place after serialization, and the event stream
+/// message stream body is established during serialization. Since event stream
+/// signing may need context from the initial HTTP signing operation, this
+/// [`DeferredSigner`] is needed to wire up the signer later in the request lifecycle.
+///
+/// This signer basically just establishes a MPSC channel so that the sender can
+/// be placed in the request's config. Then the HTTP signer implementation can
+/// retrieve the sender from that config and send an actual signing implementation
+/// with all the context needed.
+///
+/// When an event stream implementation needs to sign a message, the first call to
+/// sign will acquire a signing implementation off of the channel and cache it
+/// for the remainder of the operation.
+#[derive(Debug)]
+pub struct DeferredSigner {
+    rx: Option<Mutex<mpsc::Receiver<Box<dyn SignMessage + Send + Sync>>>>,
+    signer: Option<Box<dyn SignMessage + Send + Sync>>,
+}
+
+impl DeferredSigner {
+    pub fn new() -> (Self, DeferredSignerSender) {
+        let (tx, rx) = mpsc::channel();
+        (
+            Self {
+                rx: Some(Mutex::new(rx)),
+                signer: None,
+            },
+            DeferredSignerSender::new(tx),
+        )
+    }
+
+    fn acquire(&mut self) -> &mut (dyn SignMessage + Send + Sync) {
+        // Can't use `if let Some(signer) = &mut self.signer` because the borrow checker isn't smart enough
+        if self.signer.is_some() {
+            return self.signer.as_mut().unwrap().as_mut();
+        } else {
+            self.signer = Some(
+                self.rx
+                    .take()
+                    .expect("only taken once")
+                    .lock()
+                    .unwrap()
+                    .try_recv()
+                    .ok()
+                    // TODO(enableNewSmithyRuntimeCleanup): When the middleware implementation is removed,
+                    // this should panic rather than default to the `NoOpSigner`. The reason it defaults
+                    // is because middleware-based generic clients don't have any default middleware,
+                    // so there is no way to send a `NoOpSigner` by default when there is no other
+                    // auth scheme. The orchestrator auth setup is a lot more robust and will make
+                    // this problem trivial.
+                    .unwrap_or_else(|| Box::new(NoOpSigner {}) as _),
+            );
+            self.acquire()
+        }
+    }
+}
+
+impl SignMessage for DeferredSigner {
+    fn sign(&mut self, message: Message) -> Result<Message, SignMessageError> {
+        self.acquire().sign(message)
+    }
+
+    fn sign_empty(&mut self) -> Option<Result<Message, SignMessageError>> {
+        self.acquire().sign_empty()
+    }
 }
 
 #[derive(Debug)]
@@ -75,7 +169,7 @@ pub trait UnmarshallMessage: fmt::Debug {
 }
 
 mod value {
-    use crate::error::Error;
+    use crate::error::{Error, ErrorKind};
     use crate::frame::checked;
     use crate::str_bytes::StrBytes;
     use aws_smithy_types::DateTime;
@@ -179,7 +273,7 @@ mod value {
             if $buf.remaining() >= size_of::<$size_typ>() {
                 Ok(HeaderValue::$typ($buf.$read_fn()))
             } else {
-                Err(Error::InvalidHeaderValue)
+                Err(ErrorKind::InvalidHeaderValue.into())
             }
         };
     }
@@ -198,18 +292,18 @@ mod value {
                     if buffer.remaining() > size_of::<u16>() {
                         let len = buffer.get_u16() as usize;
                         if buffer.remaining() < len {
-                            return Err(Error::InvalidHeaderValue);
+                            return Err(ErrorKind::InvalidHeaderValue.into());
                         }
                         let bytes = buffer.copy_to_bytes(len);
                         if value_type == TYPE_STRING {
                             Ok(HeaderValue::String(
-                                bytes.try_into().map_err(|_| Error::InvalidUtf8String)?,
+                                bytes.try_into().map_err(|_| ErrorKind::InvalidUtf8String)?,
                             ))
                         } else {
                             Ok(HeaderValue::ByteArray(bytes))
                         }
                     } else {
-                        Err(Error::InvalidHeaderValue)
+                        Err(ErrorKind::InvalidHeaderValue.into())
                     }
                 }
                 TYPE_TIMESTAMP => {
@@ -217,11 +311,11 @@ mod value {
                         let epoch_millis = buffer.get_i64();
                         Ok(HeaderValue::Timestamp(DateTime::from_millis(epoch_millis)))
                     } else {
-                        Err(Error::InvalidHeaderValue)
+                        Err(ErrorKind::InvalidHeaderValue.into())
                     }
                 }
                 TYPE_UUID => read_value!(buffer, Uuid, u128, get_u128),
-                _ => Err(Error::InvalidHeaderValueType(value_type)),
+                _ => Err(ErrorKind::InvalidHeaderValueType(value_type).into()),
             }
         }
 
@@ -247,19 +341,22 @@ mod value {
                 }
                 ByteArray(val) => {
                     buffer.put_u8(TYPE_BYTE_ARRAY);
-                    buffer.put_u16(checked(val.len(), Error::HeaderValueTooLong)?);
+                    buffer.put_u16(checked(val.len(), ErrorKind::HeaderValueTooLong.into())?);
                     buffer.put_slice(&val[..]);
                 }
                 String(val) => {
                     buffer.put_u8(TYPE_STRING);
-                    buffer.put_u16(checked(val.as_bytes().len(), Error::HeaderValueTooLong)?);
+                    buffer.put_u16(checked(
+                        val.as_bytes().len(),
+                        ErrorKind::HeaderValueTooLong.into(),
+                    )?);
                     buffer.put_slice(&val.as_bytes()[..]);
                 }
                 Timestamp(time) => {
                     buffer.put_u8(TYPE_TIMESTAMP);
                     buffer.put_i64(
                         time.to_millis()
-                            .map_err(|_| Error::TimestampValueTooLarge(*time))?,
+                            .map_err(|_| ErrorKind::TimestampValueTooLarge(*time))?,
                     );
                 }
                 Uuid(val) => {
@@ -296,12 +393,13 @@ mod value {
     }
 }
 
+use aws_smithy_types::config_bag::{Storable, StoreReplace};
 pub use value::HeaderValue;
 
 /// Event Stream header.
 #[non_exhaustive]
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "derive-arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "derive-arbitrary", derive(derive_arbitrary::Arbitrary))]
 pub struct Header {
     name: StrBytes,
     value: HeaderValue,
@@ -329,19 +427,19 @@ impl Header {
     /// Reads a header from the given `buffer`.
     fn read_from<B: Buf>(mut buffer: B) -> Result<(Header, usize), Error> {
         if buffer.remaining() < MIN_HEADER_LEN {
-            return Err(Error::InvalidHeadersLength);
+            return Err(ErrorKind::InvalidHeadersLength.into());
         }
 
         let mut counting_buf = CountBuf::new(&mut buffer);
         let name_len = counting_buf.get_u8();
         if name_len as usize >= counting_buf.remaining() {
-            return Err(Error::InvalidHeaderNameLength);
+            return Err(ErrorKind::InvalidHeaderNameLength.into());
         }
 
         let name: StrBytes = counting_buf
             .copy_to_bytes(name_len as usize)
             .try_into()
-            .map_err(|_| Error::InvalidUtf8String)?;
+            .map_err(|_| ErrorKind::InvalidUtf8String)?;
         let value = HeaderValue::read_from(&mut counting_buf)?;
         Ok((Header::new(name, value), counting_buf.into_count()))
     }
@@ -349,7 +447,7 @@ impl Header {
     /// Writes the header to the given `buffer`.
     fn write_to<B: BufMut>(&self, mut buffer: B) -> Result<(), Error> {
         if self.name.as_bytes().len() > MAX_HEADER_NAME_LEN {
-            return Err(Error::InvalidHeaderNameLength);
+            return Err(ErrorKind::InvalidHeaderNameLength.into());
         }
 
         buffer.put_u8(u8::try_from(self.name.as_bytes().len()).expect("bounds check above"));
@@ -414,18 +512,18 @@ impl Message {
         // If the buffer doesn't have the entire, then error
         let total_len = crc_buffer.get_u32();
         if crc_buffer.remaining() + size_of::<u32>() < total_len as usize {
-            return Err(Error::InvalidMessageLength);
+            return Err(ErrorKind::InvalidMessageLength.into());
         }
 
         // Validate the prelude
         let header_len = crc_buffer.get_u32();
         let (expected_crc, prelude_crc) = (crc_buffer.into_crc(), buffer.get_u32());
         if expected_crc != prelude_crc {
-            return Err(Error::PreludeChecksumMismatch(expected_crc, prelude_crc));
+            return Err(ErrorKind::PreludeChecksumMismatch(expected_crc, prelude_crc).into());
         }
         // The header length can be 0 or >= 2, but must fit within the frame size
         if header_len == 1 || header_len > max_header_len(total_len)? {
-            return Err(Error::InvalidHeadersLength);
+            return Err(ErrorKind::InvalidHeadersLength.into());
         }
         Ok((total_len, header_len))
     }
@@ -434,7 +532,7 @@ impl Message {
     /// the [`MessageFrameDecoder`] instead of this.
     pub fn read_from<B: Buf>(mut buffer: B) -> Result<Message, Error> {
         if buffer.remaining() < PRELUDE_LENGTH_BYTES_USIZE {
-            return Err(Error::InvalidMessageLength);
+            return Err(ErrorKind::InvalidMessageLength.into());
         }
 
         // Calculate a CRC as we go and read the prelude
@@ -444,9 +542,9 @@ impl Message {
         // Verify we have the full frame before continuing
         let remaining_len = total_len
             .checked_sub(PRELUDE_LENGTH_BYTES)
-            .ok_or(Error::InvalidMessageLength)?;
+            .ok_or_else(|| Error::from(ErrorKind::InvalidMessageLength))?;
         if crc_buffer.remaining() < remaining_len as usize {
-            return Err(Error::InvalidMessageLength);
+            return Err(ErrorKind::InvalidMessageLength.into());
         }
 
         // Read headers
@@ -456,7 +554,7 @@ impl Message {
             let (header, bytes_read) = Header::read_from(&mut crc_buffer)?;
             header_bytes_read += bytes_read;
             if header_bytes_read > header_len as usize {
-                return Err(Error::InvalidHeaderValue);
+                return Err(ErrorKind::InvalidHeaderValue.into());
             }
             headers.push(header);
         }
@@ -468,7 +566,7 @@ impl Message {
         let expected_crc = crc_buffer.into_crc();
         let message_crc = buffer.get_u32();
         if expected_crc != message_crc {
-            return Err(Error::MessageChecksumMismatch(expected_crc, message_crc));
+            return Err(ErrorKind::MessageChecksumMismatch(expected_crc, message_crc).into());
         }
 
         Ok(Message { headers, payload })
@@ -481,8 +579,8 @@ impl Message {
             header.write_to(&mut headers)?;
         }
 
-        let headers_len = checked(headers.len(), Error::HeadersTooLong)?;
-        let payload_len = checked(self.payload.len(), Error::PayloadTooLong)?;
+        let headers_len = checked(headers.len(), ErrorKind::HeadersTooLong.into())?;
+        let payload_len = checked(self.payload.len(), ErrorKind::PayloadTooLong.into())?;
         let message_len = [
             PRELUDE_LENGTH_BYTES,
             headers_len,
@@ -491,7 +589,8 @@ impl Message {
         ]
         .iter()
         .try_fold(0u32, |acc, v| {
-            acc.checked_add(*v).ok_or(Error::MessageTooLong)
+            acc.checked_add(*v)
+                .ok_or_else(|| Error::from(ErrorKind::MessageTooLong))
         })?;
 
         let mut crc_buffer = CrcBufMut::new(buffer);
@@ -523,7 +622,7 @@ fn checked<T: TryFrom<U>, U>(from: U, err: Error) -> Result<T, Error> {
 fn max_header_len(total_len: u32) -> Result<u32, Error> {
     total_len
         .checked_sub(PRELUDE_LENGTH_BYTES + MESSAGE_CRC_LENGTH_BYTES)
-        .ok_or(Error::InvalidMessageLength)
+        .ok_or_else(|| Error::from(ErrorKind::InvalidMessageLength))
 }
 
 fn payload_len(total_len: u32, header_len: u32) -> Result<u32, Error> {
@@ -531,14 +630,14 @@ fn payload_len(total_len: u32, header_len: u32) -> Result<u32, Error> {
         .checked_sub(
             header_len
                 .checked_add(PRELUDE_LENGTH_BYTES + MESSAGE_CRC_LENGTH_BYTES)
-                .ok_or(Error::InvalidHeadersLength)?,
+                .ok_or_else(|| Error::from(ErrorKind::InvalidHeadersLength))?,
         )
-        .ok_or(Error::InvalidMessageLength)
+        .ok_or_else(|| Error::from(ErrorKind::InvalidMessageLength))
 }
 
 #[cfg(test)]
 mod message_tests {
-    use crate::error::Error;
+    use crate::error::ErrorKind;
     use crate::frame::{Header, HeaderValue, Message};
     use aws_smithy_types::DateTime;
     use bytes::Bytes;
@@ -546,10 +645,12 @@ mod message_tests {
     macro_rules! read_message_expect_err {
         ($bytes:expr, $err:pat) => {
             let result = Message::read_from(&mut Bytes::from_static($bytes));
+            let result = result.as_ref();
+            assert!(result.is_err(), "Expected error, got {:?}", result);
             assert!(
-                matches!(&result.as_ref(), &Err($err)),
+                matches!(result.err().unwrap().kind(), $err),
                 "Expected {}, got {:?}",
-                stringify!(Err($err)),
+                stringify!($err),
                 result
             );
         };
@@ -559,35 +660,35 @@ mod message_tests {
     fn invalid_messages() {
         read_message_expect_err!(
             include_bytes!("../test_data/invalid_header_string_value_length"),
-            Error::InvalidHeaderValue
+            ErrorKind::InvalidHeaderValue
         );
         read_message_expect_err!(
             include_bytes!("../test_data/invalid_header_string_length_cut_off"),
-            Error::InvalidHeaderValue
+            ErrorKind::InvalidHeaderValue
         );
         read_message_expect_err!(
             include_bytes!("../test_data/invalid_header_value_type"),
-            Error::InvalidHeaderValueType(0x60)
+            ErrorKind::InvalidHeaderValueType(0x60)
         );
         read_message_expect_err!(
             include_bytes!("../test_data/invalid_header_name_length"),
-            Error::InvalidHeaderNameLength
+            ErrorKind::InvalidHeaderNameLength
         );
         read_message_expect_err!(
             include_bytes!("../test_data/invalid_headers_length"),
-            Error::InvalidHeadersLength
+            ErrorKind::InvalidHeadersLength
         );
         read_message_expect_err!(
             include_bytes!("../test_data/invalid_prelude_checksum"),
-            Error::PreludeChecksumMismatch(0x8BB495FB, 0xDEADBEEF)
+            ErrorKind::PreludeChecksumMismatch(0x8BB495FB, 0xDEADBEEF)
         );
         read_message_expect_err!(
             include_bytes!("../test_data/invalid_message_checksum"),
-            Error::MessageChecksumMismatch(0x01a05860, 0xDEADBEEF)
+            ErrorKind::MessageChecksumMismatch(0x01a05860, 0xDEADBEEF)
         );
         read_message_expect_err!(
             include_bytes!("../test_data/invalid_header_name_length_too_long"),
-            Error::InvalidUtf8String
+            ErrorKind::InvalidUtf8String
         );
     }
 
@@ -601,7 +702,7 @@ mod message_tests {
             0x36,
         ];
 
-        let result = Message::read_from(&mut Bytes::from_static(&data)).unwrap();
+        let result = Message::read_from(&mut Bytes::from_static(data)).unwrap();
         assert_eq!(result.headers(), Vec::new());
 
         let expected_payload = b"{'foo':'bar'}";
@@ -620,7 +721,7 @@ mod message_tests {
             0x7d, 0x8D, 0x9C, 0x08, 0xB1,
         ];
 
-        let result = Message::read_from(&mut Bytes::from_static(&data)).unwrap();
+        let result = Message::read_from(&mut Bytes::from_static(data)).unwrap();
         assert_eq!(
             result.headers(),
             vec![Header::new(
@@ -735,7 +836,7 @@ impl MessageFrameDecoder {
             let remaining_len = (&self.prelude[..])
                 .get_u32()
                 .checked_sub(PRELUDE_LENGTH_BYTES)
-                .ok_or(Error::InvalidMessageLength)?;
+                .ok_or_else(|| Error::from(ErrorKind::InvalidMessageLength))?;
             if buffer.remaining() >= remaining_len as usize {
                 return Ok(Some(remaining_len as usize));
             }
@@ -840,5 +941,58 @@ mod message_frame_decoder_tests {
             println!("chunk size: {}", chunk_size);
             multiple_streaming_messages_chunk_size(chunk_size);
         }
+    }
+}
+
+#[cfg(test)]
+mod deferred_signer_tests {
+    use crate::frame::{DeferredSigner, Header, HeaderValue, Message, SignMessage};
+    use bytes::Bytes;
+
+    fn check_send_sync<T: Send + Sync>(value: T) -> T {
+        value
+    }
+
+    #[test]
+    fn deferred_signer() {
+        #[derive(Default, Debug)]
+        struct TestSigner {
+            call_num: i32,
+        }
+        impl SignMessage for TestSigner {
+            fn sign(
+                &mut self,
+                message: Message,
+            ) -> Result<Message, crate::frame::SignMessageError> {
+                self.call_num += 1;
+                Ok(message.add_header(Header::new("call_num", HeaderValue::Int32(self.call_num))))
+            }
+
+            fn sign_empty(&mut self) -> Option<Result<Message, crate::frame::SignMessageError>> {
+                None
+            }
+        }
+
+        let (mut signer, sender) = check_send_sync(DeferredSigner::new());
+
+        sender.send(Box::<TestSigner>::default()).expect("success");
+
+        let message = signer.sign(Message::new(Bytes::new())).expect("success");
+        assert_eq!(1, message.headers()[0].value().as_int32().unwrap());
+
+        let message = signer.sign(Message::new(Bytes::new())).expect("success");
+        assert_eq!(2, message.headers()[0].value().as_int32().unwrap());
+
+        assert!(signer.sign_empty().is_none());
+    }
+
+    #[test]
+    fn deferred_signer_defaults_to_noop_signer() {
+        let (mut signer, _sender) = DeferredSigner::new();
+        assert_eq!(
+            Message::new(Bytes::new()),
+            signer.sign(Message::new(Bytes::new())).unwrap()
+        );
+        assert!(signer.sign_empty().is_none());
     }
 }

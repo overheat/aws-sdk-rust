@@ -3,15 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+use aws_smithy_types::error::display::DisplayErrorContext;
 use aws_types::app_name::AppName;
 use aws_types::os_shim_internal::Env;
 
 /// Load an app name from the `AWS_SDK_UA_APP_ID` environment variable.
 #[derive(Debug, Default)]
+#[deprecated(note = "This is unused and will be removed in a future release.")]
 pub struct EnvironmentVariableAppNameProvider {
     env: Env,
 }
 
+#[allow(deprecated)]
 impl EnvironmentVariableAppNameProvider {
     /// Create a new `EnvironmentVariableAppNameProvider`
     pub fn new() -> Self {
@@ -32,39 +35,12 @@ impl EnvironmentVariableAppNameProvider {
             match AppName::new(name) {
                 Ok(name) => Some(name),
                 Err(err) => {
-                    tracing::warn!(err = %err, "`AWS_SDK_UA_APP_ID` environment variable value was invalid");
+                    tracing::warn!(err = %DisplayErrorContext(&err), "`AWS_SDK_UA_APP_ID` environment variable value was invalid");
                     None
                 }
             }
         } else {
             None
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::environment::EnvironmentVariableAppNameProvider;
-    use aws_types::app_name::AppName;
-    use aws_types::os_shim_internal::Env;
-    use std::collections::HashMap;
-
-    #[test]
-    fn env_var_not_set() {
-        let provider = EnvironmentVariableAppNameProvider::new_with_env(Env::from(HashMap::new()));
-        assert_eq!(None, provider.app_name());
-    }
-
-    #[test]
-    fn env_var_set() {
-        let provider = EnvironmentVariableAppNameProvider::new_with_env(Env::from(
-            vec![("AWS_SDK_UA_APP_ID".to_string(), "something".to_string())]
-                .into_iter()
-                .collect::<HashMap<String, String>>(),
-        ));
-        assert_eq!(
-            Some(AppName::new("something").unwrap()),
-            provider.app_name()
-        );
     }
 }

@@ -3,20 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use aws_sdk_s3::model::{
+use aws_config::retry::RetryConfig;
+use aws_credential_types::provider::SharedCredentialsProvider;
+use aws_sdk_s3::config::{Credentials, Region};
+use aws_sdk_s3::types::{
     CompressionType, CsvInput, CsvOutput, ExpressionType, FileHeaderInfo, InputSerialization,
     OutputSerialization,
 };
-use aws_sdk_s3::{Client, Config, Credentials, Region};
-use aws_smithy_async::rt::sleep::{AsyncSleep, Sleep};
-use aws_smithy_client::never::NeverConnector;
-use aws_smithy_http::result::SdkError;
-use aws_smithy_types::timeout;
-use aws_smithy_types::tristate::TriState;
-
+use aws_sdk_s3::{Client, Config};
 use aws_smithy_async::assert_elapsed;
+use aws_smithy_async::rt::sleep::{AsyncSleep, SharedAsyncSleep, Sleep};
+use aws_smithy_runtime::client::http::test_util::NeverClient;
+use aws_smithy_runtime::test_util::capture_test_logs::capture_test_logs;
+use aws_smithy_runtime_api::client::result::SdkError;
+use aws_smithy_types::error::display::DisplayErrorContext;
+use aws_smithy_types::timeout::TimeoutConfig;
 use std::fmt::Debug;
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 #[derive(Debug)]
@@ -32,7 +34,10 @@ impl AsyncSleep for SmolSleep {
 
 #[test]
 fn test_smol_runtime_timeouts() {
-    if let Err(err) = smol::block_on(async { timeout_test(Arc::new(SmolSleep)).await }) {
+    let _guard = capture_test_logs();
+
+    if let Err(err) = smol::block_on(async { timeout_test(SharedAsyncSleep::new(SmolSleep)).await })
+    {
         println!("{err}");
         panic!();
     }
@@ -40,7 +45,9 @@ fn test_smol_runtime_timeouts() {
 
 #[test]
 fn test_smol_runtime_retry() {
-    if let Err(err) = smol::block_on(async { retry_test(Arc::new(SmolSleep)).await }) {
+    let _guard = capture_test_logs();
+
+    if let Err(err) = smol::block_on(async { retry_test(SharedAsyncSleep::new(SmolSleep)).await }) {
         println!("{err}");
         panic!();
     }
@@ -57,9 +64,11 @@ impl AsyncSleep for AsyncStdSleep {
 
 #[test]
 fn test_async_std_runtime_timeouts() {
-    if let Err(err) =
-        async_std::task::block_on(async { timeout_test(Arc::new(AsyncStdSleep)).await })
-    {
+    let _guard = capture_test_logs();
+
+    if let Err(err) = async_std::task::block_on(async {
+        timeout_test(SharedAsyncSleep::new(AsyncStdSleep)).await
+    }) {
         println!("{err}");
         panic!();
     }
@@ -67,27 +76,30 @@ fn test_async_std_runtime_timeouts() {
 
 #[test]
 fn test_async_std_runtime_retry() {
-    if let Err(err) = async_std::task::block_on(async { retry_test(Arc::new(AsyncStdSleep)).await })
+    let _guard = capture_test_logs();
+
+    if let Err(err) =
+        async_std::task::block_on(async { retry_test(SharedAsyncSleep::new(AsyncStdSleep)).await })
     {
         println!("{err}");
         panic!();
     }
 }
 
-async fn timeout_test(sleep_impl: Arc<dyn AsyncSleep>) -> Result<(), Box<dyn std::error::Error>> {
-    let conn = NeverConnector::new();
+async fn timeout_test(sleep_impl: SharedAsyncSleep) -> Result<(), Box<dyn std::error::Error>> {
+    let http_client = NeverClient::new();
     let region = Region::from_static("us-east-2");
-    let credentials = Credentials::new("test", "test", None, None, "test");
-    let api_timeouts =
-        timeout::Api::new().with_call_timeout(TriState::Set(Duration::from_secs_f32(0.5)));
-    let timeout_config = timeout::Config::new().with_api_timeouts(api_timeouts);
+    let timeout_config = TimeoutConfig::builder()
+        .operation_timeout(Duration::from_secs_f32(0.5))
+        .build();
     let config = Config::builder()
         .region(region)
-        .credentials_provider(credentials)
+        .http_client(http_client.clone())
+        .credentials_provider(Credentials::for_tests())
         .timeout_config(timeout_config)
         .sleep_impl(sleep_impl)
         .build();
-    let client = Client::from_conf_conn(config, conn.clone());
+    let client = Client::from_conf(config);
 
     let now = Instant::now();
 
@@ -116,30 +128,33 @@ async fn timeout_test(sleep_impl: Arc<dyn AsyncSleep>) -> Result<(), Box<dyn std
         .await
         .unwrap_err();
 
-    assert_eq!(format!("{:?}", err), "TimeoutError(RequestTimeoutError { kind: \"API call (all attempts including retries)\", duration: 500ms })");
-    // Assert 500ms have passed with a 10ms margin of error
-    assert_elapsed!(now, Duration::from_millis(500), Duration::from_millis(10));
+    let expected = "operation timeout (all attempts including retries) occurred after 500ms";
+    let message = format!("{}", DisplayErrorContext(err));
+    assert!(
+        message.contains(expected),
+        "expected '{message}' to contain '{expected}'"
+    );
+    // Assert 500ms have passed with a 150ms margin of error
+    assert_elapsed!(now, Duration::from_millis(500), Duration::from_millis(150));
 
     Ok(())
 }
 
-async fn retry_test(sleep_impl: Arc<dyn AsyncSleep>) -> Result<(), Box<dyn std::error::Error>> {
-    let conn = NeverConnector::new();
-    let credentials = Credentials::new("test", "test", None, None, "test");
+async fn retry_test(sleep_impl: SharedAsyncSleep) -> Result<(), Box<dyn std::error::Error>> {
+    let http_client = NeverClient::new();
     let conf = aws_types::SdkConfig::builder()
         .region(Region::new("us-east-2"))
-        .credentials_provider(aws_types::credentials::SharedCredentialsProvider::new(
-            credentials,
-        ))
+        .http_client(http_client.clone())
+        .credentials_provider(SharedCredentialsProvider::new(Credentials::for_tests()))
+        .retry_config(RetryConfig::standard().with_max_attempts(3))
         .timeout_config(
-            timeout::Config::new().with_api_timeouts(
-                timeout::Api::new()
-                    .with_call_attempt_timeout(TriState::Set(Duration::from_secs_f64(0.1))),
-            ),
+            TimeoutConfig::builder()
+                .operation_attempt_timeout(Duration::from_secs_f64(0.1))
+                .build(),
         )
         .sleep_impl(sleep_impl)
         .build();
-    let client = Client::from_conf_conn(Config::new(&conf), conn.clone());
+    let client = Client::new(&conf);
     let resp = client
         .list_buckets()
         .send()
@@ -147,12 +162,12 @@ async fn retry_test(sleep_impl: Arc<dyn AsyncSleep>) -> Result<(), Box<dyn std::
         .expect_err("call should fail");
     assert!(
         matches!(resp, SdkError::TimeoutError { .. }),
-        "expected a timeout error, got: {}",
+        "expected a timeout error, got: {:?}",
         resp
     );
     assert_eq!(
-        conn.num_calls(),
         3,
+        http_client.num_calls(),
         "client level timeouts should be retried"
     );
 

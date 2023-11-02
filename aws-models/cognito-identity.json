@@ -1,5 +1,5 @@
 {
-    "smithy": "1.0",
+    "smithy": "2.0",
     "metadata": {
         "suppressions": [
             {
@@ -128,6 +128,894 @@
                 "smithy.api#title": "Amazon Cognito Identity",
                 "smithy.api#xmlNamespace": {
                     "uri": "http://cognito-identity.amazonaws.com/doc/2014-06-30/"
+                },
+                "smithy.rules#endpointRuleSet": {
+                    "version": "1.0",
+                    "parameters": {
+                        "Region": {
+                            "builtIn": "AWS::Region",
+                            "required": false,
+                            "documentation": "The AWS region used to dispatch the request.",
+                            "type": "String"
+                        },
+                        "UseDualStack": {
+                            "builtIn": "AWS::UseDualStack",
+                            "required": true,
+                            "default": false,
+                            "documentation": "When true, use the dual-stack endpoint. If the configured endpoint does not support dual-stack, dispatching the request MAY return an error.",
+                            "type": "Boolean"
+                        },
+                        "UseFIPS": {
+                            "builtIn": "AWS::UseFIPS",
+                            "required": true,
+                            "default": false,
+                            "documentation": "When true, send this request to the FIPS-compliant regional endpoint. If the configured endpoint does not have a FIPS compliant endpoint, dispatching the request will return an error.",
+                            "type": "Boolean"
+                        },
+                        "Endpoint": {
+                            "builtIn": "SDK::Endpoint",
+                            "required": false,
+                            "documentation": "Override the endpoint used to send this request",
+                            "type": "String"
+                        }
+                    },
+                    "rules": [
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Endpoint"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseFIPS"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: FIPS and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseDualStack"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
+                                    "conditions": [],
+                                    "endpoint": {
+                                        "url": {
+                                            "ref": "Endpoint"
+                                        },
+                                        "properties": {},
+                                        "headers": {}
+                                    },
+                                    "type": "endpoint"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Region"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "aws.partition",
+                                            "argv": [
+                                                {
+                                                    "ref": "Region"
+                                                }
+                                            ],
+                                            "assign": "PartitionResult"
+                                        }
+                                    ],
+                                    "rules": [
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                },
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://cognito-identity-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                },
+                                                                true
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://cognito-identity-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS is enabled but this partition does not support FIPS",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://cognito-identity.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "DualStack is enabled but this partition does not support DualStack",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [],
+                                            "endpoint": {
+                                                "url": "https://cognito-identity.{Region}.{PartitionResult#dnsSuffix}",
+                                                "properties": {},
+                                                "headers": {}
+                                            },
+                                            "type": "endpoint"
+                                        }
+                                    ],
+                                    "type": "tree"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [],
+                            "error": "Invalid Configuration: Missing Region",
+                            "type": "error"
+                        }
+                    ]
+                },
+                "smithy.rules#endpointTests": {
+                    "testCases": [
+                        {
+                            "documentation": "For region ap-northeast-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.ap-northeast-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-northeast-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-northeast-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.ap-northeast-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-northeast-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-south-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.ap-south-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-south-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-southeast-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.ap-southeast-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-southeast-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-southeast-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.ap-southeast-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-southeast-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ca-central-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.ca-central-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ca-central-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-central-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.eu-central-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-central-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-north-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.eu-north-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-west-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.eu-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-west-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-west-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.eu-west-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-west-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-west-3 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.eu-west-3.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-west-3",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region me-south-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.me-south-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "me-south-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region sa-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.sa-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "sa-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-east-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-2 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-east-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-2",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-west-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-west-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-west-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-west-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-west-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-west-2 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-west-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-west-2",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-west-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-gov-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-west-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-west-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-gov-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-west-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity-fips.us-isob-east-1.sc2s.sgov.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://cognito-identity.us-isob-east-1.sc2s.sgov.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region not set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with fips enabled and dualstack disabled",
+                            "expect": {
+                                "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with fips disabled and dualstack enabled",
+                            "expect": {
+                                "error": "Invalid Configuration: Dualstack and custom endpoint are not supported"
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
+                            }
+                        }
+                    ],
+                    "version": "1.0"
                 }
             }
         },
@@ -141,22 +1029,24 @@
                     "min": 1,
                     "max": 15
                 },
-                "smithy.api#pattern": "\\d+"
+                "smithy.api#pattern": "^\\d+$"
             }
         },
         "com.amazonaws.cognitoidentity#AmbiguousRoleResolutionType": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "AuthenticatedRole",
-                        "name": "AUTHENTICATED_ROLE"
-                    },
-                    {
-                        "value": "Deny",
-                        "name": "DENY"
+            "type": "enum",
+            "members": {
+                "AUTHENTICATED_ROLE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "AuthenticatedRole"
                     }
-                ]
+                },
+                "DENY": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Deny"
+                    }
+                }
             }
         },
         "com.amazonaws.cognitoidentity#ClaimName": {
@@ -166,7 +1056,7 @@
                     "min": 1,
                     "max": 64
                 },
-                "smithy.api#pattern": "[\\p{L}\\p{M}\\p{S}\\p{N}\\p{P}]+"
+                "smithy.api#pattern": "^[\\p{L}\\p{M}\\p{S}\\p{N}\\p{P}]+$"
             }
         },
         "com.amazonaws.cognitoidentity#ClaimValue": {
@@ -179,10 +1069,7 @@
             }
         },
         "com.amazonaws.cognitoidentity#ClassicFlow": {
-            "type": "boolean",
-            "traits": {
-                "smithy.api#box": {}
-            }
+            "type": "boolean"
         },
         "com.amazonaws.cognitoidentity#CognitoIdentityProvider": {
             "type": "structure",
@@ -202,7 +1089,7 @@
                 "ServerSideTokenCheck": {
                     "target": "com.amazonaws.cognitoidentity#CognitoIdentityProviderTokenCheck",
                     "traits": {
-                        "smithy.api#box": {},
+                        "smithy.api#default": null,
                         "smithy.api#documentation": "<p>TRUE if server-side token validation is enabled for the identity provider’s\n         token.</p>\n         <p>Once you set <code>ServerSideTokenCheck</code> to TRUE for an identity pool, that\n         identity pool will check with the integrated user pools to make sure that the user has not\n         been globally signed out or deleted before the identity pool provides an OIDC token or AWS\n         credentials for the user.</p>\n         <p>If the user is signed out or deleted, the identity pool will return a 400 Not\n         Authorized error.</p>"
                     }
                 }
@@ -218,7 +1105,7 @@
                     "min": 1,
                     "max": 128
                 },
-                "smithy.api#pattern": "[\\w_]+"
+                "smithy.api#pattern": "^[\\w_]+$"
             }
         },
         "com.amazonaws.cognitoidentity#CognitoIdentityProviderList": {
@@ -234,11 +1121,14 @@
                     "min": 1,
                     "max": 128
                 },
-                "smithy.api#pattern": "[\\w._:/-]+"
+                "smithy.api#pattern": "^[\\w._:/-]+$"
             }
         },
         "com.amazonaws.cognitoidentity#CognitoIdentityProviderTokenCheck": {
-            "type": "boolean"
+            "type": "boolean",
+            "traits": {
+                "smithy.api#default": false
+            }
         },
         "com.amazonaws.cognitoidentity#ConcurrentModificationException": {
             "type": "structure",
@@ -301,6 +1191,7 @@
                 "AllowUnauthenticatedIdentities": {
                     "target": "com.amazonaws.cognitoidentity#IdentityPoolUnauthenticated",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "<p>TRUE if the identity pool supports unauthenticated logins.</p>",
                         "smithy.api#required": {}
                     }
@@ -349,7 +1240,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the CreateIdentityPool action.</p>"
+                "smithy.api#documentation": "<p>Input to the CreateIdentityPool action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#Credentials": {
@@ -422,7 +1314,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>DeleteIdentities</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>DeleteIdentities</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#DeleteIdentitiesResponse": {
@@ -436,13 +1329,17 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Returned in response to a successful <code>DeleteIdentities</code>\n         operation.</p>"
+                "smithy.api#documentation": "<p>Returned in response to a successful <code>DeleteIdentities</code>\n         operation.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#DeleteIdentityPool": {
             "type": "operation",
             "input": {
                 "target": "com.amazonaws.cognitoidentity#DeleteIdentityPoolInput"
+            },
+            "output": {
+                "target": "smithy.api#Unit"
             },
             "errors": [
                 {
@@ -477,7 +1374,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the DeleteIdentityPool action.</p>"
+                "smithy.api#documentation": "<p>Input to the DeleteIdentityPool action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#DescribeIdentity": {
@@ -521,7 +1419,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>DescribeIdentity</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>DescribeIdentity</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#DescribeIdentityPool": {
@@ -565,7 +1464,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the DescribeIdentityPool action.</p>"
+                "smithy.api#documentation": "<p>Input to the DescribeIdentityPool action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#DeveloperProviderName": {
@@ -575,7 +1475,7 @@
                     "min": 1,
                     "max": 128
                 },
-                "smithy.api#pattern": "[\\w._-]+"
+                "smithy.api#pattern": "^[\\w._-]+$"
             }
         },
         "com.amazonaws.cognitoidentity#DeveloperUserAlreadyRegisteredException": {
@@ -610,18 +1510,20 @@
             }
         },
         "com.amazonaws.cognitoidentity#ErrorCode": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "AccessDenied",
-                        "name": "ACCESS_DENIED"
-                    },
-                    {
-                        "value": "InternalServerError",
-                        "name": "INTERNAL_SERVER_ERROR"
+            "type": "enum",
+            "members": {
+                "ACCESS_DENIED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "AccessDenied"
                     }
-                ]
+                },
+                "INTERNAL_SERVER_ERROR": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "InternalServerError"
+                    }
+                }
             }
         },
         "com.amazonaws.cognitoidentity#ExternalServiceException": {
@@ -704,7 +1606,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>GetCredentialsForIdentity</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>GetCredentialsForIdentity</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetCredentialsForIdentityResponse": {
@@ -724,7 +1627,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Returned in response to a successful <code>GetCredentialsForIdentity</code>\n         operation.</p>"
+                "smithy.api#documentation": "<p>Returned in response to a successful <code>GetCredentialsForIdentity</code>\n         operation.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetId": {
@@ -791,7 +1695,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the GetId action.</p>"
+                "smithy.api#documentation": "<p>Input to the GetId action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetIdResponse": {
@@ -805,7 +1710,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Returned in response to a GetId request.</p>"
+                "smithy.api#documentation": "<p>Returned in response to a GetId request.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetIdentityPoolRoles": {
@@ -852,7 +1758,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>GetIdentityPoolRoles</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>GetIdentityPoolRoles</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetIdentityPoolRolesResponse": {
@@ -878,7 +1785,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Returned in response to a successful <code>GetIdentityPoolRoles</code>\n         operation.</p>"
+                "smithy.api#documentation": "<p>Returned in response to a successful <code>GetIdentityPoolRoles</code>\n         operation.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetOpenIdToken": {
@@ -990,7 +1898,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>GetOpenIdTokenForDeveloperIdentity</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>GetOpenIdTokenForDeveloperIdentity</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetOpenIdTokenForDeveloperIdentityResponse": {
@@ -1010,7 +1919,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Returned in response to a successful <code>GetOpenIdTokenForDeveloperIdentity</code>\n         request.</p>"
+                "smithy.api#documentation": "<p>Returned in response to a successful <code>GetOpenIdTokenForDeveloperIdentity</code>\n         request.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetOpenIdTokenInput": {
@@ -1031,7 +1941,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the GetOpenIdToken action.</p>"
+                "smithy.api#documentation": "<p>Input to the GetOpenIdToken action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetOpenIdTokenResponse": {
@@ -1051,7 +1962,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Returned in response to a successful GetOpenIdToken request.</p>"
+                "smithy.api#documentation": "<p>Returned in response to a successful GetOpenIdToken request.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetPrincipalTagAttributeMap": {
@@ -1100,6 +2012,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#GetPrincipalTagAttributeMapResponse": {
@@ -1129,10 +2044,16 @@
                         "smithy.api#documentation": "<p>You can use this operation to add principal tags. The <code>PrincipalTags</code>operation enables you to reference user attributes in your IAM permissions policy.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#HideDisabled": {
-            "type": "boolean"
+            "type": "boolean",
+            "traits": {
+                "smithy.api#default": false
+            }
         },
         "com.amazonaws.cognitoidentity#IdentitiesList": {
             "type": "list",
@@ -1179,7 +2100,7 @@
                     "min": 1,
                     "max": 55
                 },
-                "smithy.api#pattern": "[\\w-]+:[0-9a-f-]+"
+                "smithy.api#pattern": "^[\\w-]+:[0-9a-f-]+$"
             }
         },
         "com.amazonaws.cognitoidentity#IdentityIdList": {
@@ -1214,6 +2135,7 @@
                 "AllowUnauthenticatedIdentities": {
                     "target": "com.amazonaws.cognitoidentity#IdentityPoolUnauthenticated",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "<p>TRUE if the identity pool supports unauthenticated logins.</p>",
                         "smithy.api#required": {}
                     }
@@ -1272,7 +2194,7 @@
                     "min": 1,
                     "max": 55
                 },
-                "smithy.api#pattern": "[\\w-]+:[0-9a-f-]+"
+                "smithy.api#pattern": "^[\\w-]+:[0-9a-f-]+$"
             }
         },
         "com.amazonaws.cognitoidentity#IdentityPoolName": {
@@ -1282,7 +2204,7 @@
                     "min": 1,
                     "max": 128
                 },
-                "smithy.api#pattern": "[\\w\\s+=,.@-]+"
+                "smithy.api#pattern": "^[\\w\\s+=,.@-]+$"
             }
         },
         "com.amazonaws.cognitoidentity#IdentityPoolShortDescription": {
@@ -1321,7 +2243,10 @@
             }
         },
         "com.amazonaws.cognitoidentity#IdentityPoolUnauthenticated": {
-            "type": "boolean"
+            "type": "boolean",
+            "traits": {
+                "smithy.api#default": false
+            }
         },
         "com.amazonaws.cognitoidentity#IdentityPoolsList": {
             "type": "list",
@@ -1336,7 +2261,7 @@
                     "min": 1,
                     "max": 128
                 },
-                "smithy.api#pattern": "[\\w.;_/-]+"
+                "smithy.api#pattern": "^[\\w.;_/-]+$"
             }
         },
         "com.amazonaws.cognitoidentity#IdentityProviderName": {
@@ -1490,12 +2415,14 @@
                 "HideDisabled": {
                     "target": "com.amazonaws.cognitoidentity#HideDisabled",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "<p>An optional boolean parameter that allows you to hide disabled identities. If\n         omitted, the ListIdentities API will include disabled identities in the response.</p>"
                     }
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the ListIdentities action.</p>"
+                "smithy.api#documentation": "<p>Input to the ListIdentities action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#ListIdentitiesResponse": {
@@ -1521,7 +2448,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The response to a ListIdentities request.</p>"
+                "smithy.api#documentation": "<p>The response to a ListIdentities request.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#ListIdentityPools": {
@@ -1577,7 +2505,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the ListIdentityPools action.</p>"
+                "smithy.api#documentation": "<p>Input to the ListIdentityPools action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#ListIdentityPoolsResponse": {
@@ -1597,7 +2526,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a successful ListIdentityPools action.</p>"
+                "smithy.api#documentation": "<p>The result of a successful ListIdentityPools action.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#ListTagsForResource": {
@@ -1639,6 +2569,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#ListTagsForResourceResponse": {
@@ -1650,6 +2583,9 @@
                         "smithy.api#documentation": "<p>The tags that are assigned to the identity pool.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#LoginsList": {
@@ -1741,7 +2677,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>LookupDeveloperIdentityInput</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>LookupDeveloperIdentityInput</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#LookupDeveloperIdentityResponse": {
@@ -1767,7 +2704,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Returned in response to a successful <code>LookupDeveloperIdentity</code>\n         action.</p>"
+                "smithy.api#documentation": "<p>Returned in response to a successful <code>LookupDeveloperIdentity</code>\n         action.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#MappingRule": {
@@ -1807,26 +2745,32 @@
             }
         },
         "com.amazonaws.cognitoidentity#MappingRuleMatchType": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "Equals",
-                        "name": "EQUALS"
-                    },
-                    {
-                        "value": "Contains",
-                        "name": "CONTAINS"
-                    },
-                    {
-                        "value": "StartsWith",
-                        "name": "STARTS_WITH"
-                    },
-                    {
-                        "value": "NotEqual",
-                        "name": "NOT_EQUAL"
+            "type": "enum",
+            "members": {
+                "EQUALS": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Equals"
                     }
-                ]
+                },
+                "CONTAINS": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Contains"
+                    }
+                },
+                "STARTS_WITH": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "StartsWith"
+                    }
+                },
+                "NOT_EQUAL": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "NotEqual"
+                    }
+                }
             }
         },
         "com.amazonaws.cognitoidentity#MappingRulesList": {
@@ -1906,7 +2850,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>MergeDeveloperIdentities</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>MergeDeveloperIdentities</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#MergeDeveloperIdentitiesResponse": {
@@ -1920,7 +2865,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Returned in response to a successful <code>MergeDeveloperIdentities</code>\n         action.</p>"
+                "smithy.api#documentation": "<p>Returned in response to a successful <code>MergeDeveloperIdentities</code>\n         action.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#NotAuthorizedException": {
@@ -1955,7 +2901,7 @@
                     "min": 1,
                     "max": 65535
                 },
-                "smithy.api#pattern": "[\\S]+"
+                "smithy.api#pattern": "^[\\S]+$"
             }
         },
         "com.amazonaws.cognitoidentity#PrincipalTagID": {
@@ -2075,18 +3021,20 @@
             }
         },
         "com.amazonaws.cognitoidentity#RoleMappingType": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "Token",
-                        "name": "TOKEN"
-                    },
-                    {
-                        "value": "Rules",
-                        "name": "RULES"
+            "type": "enum",
+            "members": {
+                "TOKEN": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Token"
                     }
-                ]
+                },
+                "RULES": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Rules"
+                    }
+                }
             }
         },
         "com.amazonaws.cognitoidentity#RoleType": {
@@ -2096,7 +3044,7 @@
                     "min": 1,
                     "max": 128
                 },
-                "smithy.api#pattern": "(un)?authenticated"
+                "smithy.api#pattern": "^(un)?authenticated$"
             }
         },
         "com.amazonaws.cognitoidentity#RolesMap": {
@@ -2145,6 +3093,9 @@
             "type": "operation",
             "input": {
                 "target": "com.amazonaws.cognitoidentity#SetIdentityPoolRolesInput"
+            },
+            "output": {
+                "target": "smithy.api#Unit"
             },
             "errors": [
                 {
@@ -2198,7 +3149,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>SetIdentityPoolRoles</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>SetIdentityPoolRoles</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#SetPrincipalTagAttributeMap": {
@@ -2259,6 +3211,9 @@
                         "smithy.api#documentation": "<p>You can use this operation to add principal tags.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#SetPrincipalTagAttributeMapResponse": {
@@ -2288,6 +3243,9 @@
                         "smithy.api#documentation": "<p>You can use this operation to add principal tags. The <code>PrincipalTags</code>operation enables you to reference user attributes in your IAM permissions policy.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.cognitoidentity#String": {
@@ -2348,11 +3306,17 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#TagResourceResponse": {
             "type": "structure",
-            "members": {}
+            "members": {},
+            "traits": {
+                "smithy.api#output": {}
+            }
         },
         "com.amazonaws.cognitoidentity#TagValueType": {
             "type": "string",
@@ -2366,7 +3330,6 @@
         "com.amazonaws.cognitoidentity#TokenDuration": {
             "type": "long",
             "traits": {
-                "smithy.api#box": {},
                 "smithy.api#range": {
                     "min": 1,
                     "max": 86400
@@ -2393,6 +3356,9 @@
             "type": "operation",
             "input": {
                 "target": "com.amazonaws.cognitoidentity#UnlinkDeveloperIdentityInput"
+            },
+            "output": {
+                "target": "smithy.api#Unit"
             },
             "errors": [
                 {
@@ -2451,13 +3417,17 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the <code>UnlinkDeveloperIdentity</code> action.</p>"
+                "smithy.api#documentation": "<p>Input to the <code>UnlinkDeveloperIdentity</code> action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#UnlinkIdentity": {
             "type": "operation",
             "input": {
                 "target": "com.amazonaws.cognitoidentity#UnlinkIdentityInput"
+            },
+            "output": {
+                "target": "smithy.api#Unit"
             },
             "errors": [
                 {
@@ -2514,7 +3484,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Input to the UnlinkIdentity action.</p>"
+                "smithy.api#documentation": "<p>Input to the UnlinkIdentity action.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#UnprocessedIdentityId": {
@@ -2595,11 +3566,17 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.cognitoidentity#UntagResourceResponse": {
             "type": "structure",
-            "members": {}
+            "members": {},
+            "traits": {
+                "smithy.api#output": {}
+            }
         },
         "com.amazonaws.cognitoidentity#UpdateIdentityPool": {
             "type": "operation",
@@ -2640,10 +3617,7 @@
             }
         },
         "com.amazonaws.cognitoidentity#UseDefaults": {
-            "type": "boolean",
-            "traits": {
-                "smithy.api#box": {}
-            }
+            "type": "boolean"
         }
     }
 }

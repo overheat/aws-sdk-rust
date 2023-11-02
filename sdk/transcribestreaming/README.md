@@ -3,7 +3,10 @@
 **Please Note: The SDK is currently in Developer Preview and is intended strictly for
 feedback purposes only. Do not use this SDK for production workloads.**
 
-Operations and objects for transcribing streaming speech to text.
+Amazon Transcribe streaming offers three main types of real-time transcription: __Standard__, __Medical__, and __Call Analytics__.
+  - __Standard transcriptions__ are the most common option. Refer to for details.
+  - __Medical transcriptions__ are tailored to medical professionals and incorporate medical terms. A common use case for this service is transcribing doctor-patient dialogue in real time, so doctors can focus on their patient instead of taking notes. Refer to for details.
+  - __Call Analytics transcriptions__ are designed for use with call center audio on two different channels; if you're looking for insight into customer service calls, use this option. Refer to for details.
 
 ## Getting Started
 
@@ -16,20 +19,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-transcribestreaming = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-transcribestreaming = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_transcribestreaming as transcribestreaming;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), transcribestreaming::Error> {
     let config = aws_config::load_from_env().await;
-    let client = transcribestreaming::Client::new(&config);
+    let client = aws_sdk_transcribestreaming::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -49,7 +52,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

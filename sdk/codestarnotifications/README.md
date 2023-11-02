@@ -15,7 +15,7 @@ Notification rules, by calling the following:
   - Unsubscribe, which removes a target from a notification rule.
 
 Targets, by calling the following:
-  - DeleteTarget, which removes a notification rule target (SNS topic) from a notification rule.
+  - DeleteTarget, which removes a notification rule target from a notification rule.
   - ListTargets, which lists the targets associated with a notification rule.
 
 Events, by calling the following:
@@ -26,7 +26,7 @@ Tags, by calling the following:
   - TagResource, which associates a tag you provide with a notification rule in your account.
   - UntagResource, which removes a tag from a notification rule in your account.
 
-For information about how to use AWS CodeStar Notifications, see link in the CodeStarNotifications User Guide.
+For information about how to use AWS CodeStar Notifications, see the [Amazon Web Services Developer Tools Console User Guide](https://docs.aws.amazon.com/dtconsole/latest/userguide/what-is-dtconsole.html).
 
 ## Getting Started
 
@@ -39,20 +39,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-codestarnotifications = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-codestarnotifications = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_codestarnotifications as codestarnotifications;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), codestarnotifications::Error> {
     let config = aws_config::load_from_env().await;
-    let client = codestarnotifications::Client::new(&config);
+    let client = aws_sdk_codestarnotifications::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -72,7 +72,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

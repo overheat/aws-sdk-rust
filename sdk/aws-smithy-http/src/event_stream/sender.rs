@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use crate::result::SdkError;
 use aws_smithy_eventstream::frame::{MarshallMessage, SignMessage};
+use aws_smithy_runtime_api::client::result::SdkError;
 use bytes::Bytes;
 use futures_core::Stream;
 use std::error::Error as StdError;
@@ -13,15 +13,18 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use tracing::trace;
 
 /// Input type for Event Streams.
 pub struct EventStreamSender<T, E> {
-    input_stream: Pin<Box<dyn Stream<Item = Result<T, E>> + Send>>,
+    input_stream: Pin<Box<dyn Stream<Item = Result<T, E>> + Send + Sync>>,
 }
 
 impl<T, E> Debug for EventStreamSender<T, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "EventStreamSender(Box<dyn Stream>)")
+        let name_t = std::any::type_name::<T>();
+        let name_e = std::any::type_name::<E>();
+        write!(f, "EventStreamSender<{name_t}, {name_e}>")
     }
 }
 
@@ -39,7 +42,7 @@ impl<T, E: StdError + Send + Sync + 'static> EventStreamSender<T, E> {
 
 impl<T, E, S> From<S> for EventStreamSender<T, E>
 where
-    S: Stream<Item = Result<T, E>> + Send + 'static,
+    S: Stream<Item = Result<T, E>> + Send + Sync + 'static,
 {
     fn from(stream: S) -> Self {
         EventStreamSender {
@@ -48,6 +51,7 @@ where
     }
 }
 
+/// An error that occurs within a message stream.
 #[derive(Debug)]
 pub struct MessageStreamError {
     kind: MessageStreamErrorKind,
@@ -55,7 +59,7 @@ pub struct MessageStreamError {
 }
 
 #[derive(Debug)]
-pub enum MessageStreamErrorKind {
+enum MessageStreamErrorKind {
     Unhandled(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
@@ -83,11 +87,18 @@ impl MessageStreamError {
     }
 }
 
-impl StdError for MessageStreamError {}
+impl StdError for MessageStreamError {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match &self.kind {
+            MessageStreamErrorKind::Unhandled(source) => Some(source.as_ref() as _),
+        }
+    }
+}
+
 impl fmt::Display for MessageStreamError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
-            MessageStreamErrorKind::Unhandled(inner) => std::fmt::Display::fmt(inner, f),
+            MessageStreamErrorKind::Unhandled(_) => write!(f, "message stream error"),
         }
     }
 }
@@ -97,6 +108,7 @@ impl fmt::Display for MessageStreamError {
 ///
 /// This will yield an `Err(SdkError::ConstructionFailure)` if a message can't be
 /// marshalled into an Event Stream frame, (e.g., if the message payload was too large).
+#[allow(missing_debug_implementations)]
 pub struct MessageStreamAdapter<T, E: StdError + Send + Sync + 'static> {
     marshaller: Box<dyn MarshallMessage<Input = T> + Send + Sync>,
     error_marshaller: Box<dyn MarshallMessage<Input = E> + Send + Sync>,
@@ -109,6 +121,7 @@ pub struct MessageStreamAdapter<T, E: StdError + Send + Sync + 'static> {
 impl<T, E: StdError + Send + Sync + 'static> Unpin for MessageStreamAdapter<T, E> {}
 
 impl<T, E: StdError + Send + Sync + 'static> MessageStreamAdapter<T, E> {
+    /// Create a new `MessageStreamAdapter`.
     pub fn new(
         marshaller: impl MarshallMessage<Input = T> + Send + Sync + 'static,
         error_marshaller: impl MarshallMessage<Input = E> + Send + Sync + 'static,
@@ -127,7 +140,8 @@ impl<T, E: StdError + Send + Sync + 'static> MessageStreamAdapter<T, E> {
 }
 
 impl<T, E: StdError + Send + Sync + 'static> Stream for MessageStreamAdapter<T, E> {
-    type Item = Result<Bytes, SdkError<E>>;
+    type Item =
+        Result<Bytes, SdkError<E, aws_smithy_runtime_api::client::orchestrator::HttpResponse>>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match self.stream.as_mut().poll_next(cx) {
@@ -137,29 +151,34 @@ impl<T, E: StdError + Send + Sync + 'static> Stream for MessageStreamAdapter<T, 
                         Ok(message) => self
                             .marshaller
                             .marshall(message)
-                            .map_err(|err| SdkError::ConstructionFailure(Box::new(err)))?,
+                            .map_err(SdkError::construction_failure)?,
                         Err(message) => self
                             .error_marshaller
                             .marshall(message)
-                            .map_err(|err| SdkError::ConstructionFailure(Box::new(err)))?,
+                            .map_err(SdkError::construction_failure)?,
                     };
+
+                    trace!(unsigned_message = ?message, "signing event stream message");
                     let message = self
                         .signer
                         .sign(message)
-                        .map_err(|err| SdkError::ConstructionFailure(err))?;
+                        .map_err(SdkError::construction_failure)?;
+
                     let mut buffer = Vec::new();
                     message
                         .write_to(&mut buffer)
-                        .map_err(|err| SdkError::ConstructionFailure(Box::new(err)))?;
+                        .map_err(SdkError::construction_failure)?;
+                    trace!(signed_message = ?buffer, "sending signed event stream message");
                     Poll::Ready(Some(Ok(Bytes::from(buffer))))
                 } else if !self.end_signal_sent {
                     self.end_signal_sent = true;
                     let mut buffer = Vec::new();
                     match self.signer.sign_empty() {
                         Some(sign) => {
-                            sign.map_err(|err| SdkError::ConstructionFailure(err))?
+                            sign.map_err(SdkError::construction_failure)?
                                 .write_to(&mut buffer)
-                                .map_err(|err| SdkError::ConstructionFailure(Box::new(err)))?;
+                                .map_err(SdkError::construction_failure)?;
+                            trace!(signed_message = ?buffer, "sending signed empty message to terminate the event stream");
                             Poll::Ready(Some(Ok(Bytes::from(buffer))))
                         }
                         None => Poll::Ready(None),
@@ -177,12 +196,12 @@ impl<T, E: StdError + Send + Sync + 'static> Stream for MessageStreamAdapter<T, 
 mod tests {
     use super::MarshallMessage;
     use crate::event_stream::{EventStreamSender, MessageStreamAdapter};
-    use crate::result::SdkError;
     use async_stream::stream;
     use aws_smithy_eventstream::error::Error as EventStreamError;
     use aws_smithy_eventstream::frame::{
         Header, HeaderValue, Message, NoOpSigner, SignMessage, SignMessageError,
     };
+    use aws_smithy_runtime_api::client::result::SdkError;
     use bytes::Bytes;
     use futures_core::Stream;
     use futures_util::stream::StreamExt;
@@ -215,7 +234,7 @@ mod tests {
         type Input = TestServiceError;
 
         fn marshall(&self, _input: Self::Input) -> Result<Message, EventStreamError> {
-            Err(EventStreamError::InvalidMessageLength)
+            Err(Message::read_from(&b""[..]).expect_err("this should always fail"))
         }
     }
 
@@ -242,6 +261,17 @@ mod tests {
                 Message::new(&b""[..]).add_header(Header::new("signed", HeaderValue::Bool(true)))
             ))
         }
+    }
+
+    fn check_send_sync<T: Send + Sync>(value: T) -> T {
+        value
+    }
+
+    #[test]
+    fn event_stream_sender_send_sync() {
+        check_send_sync(EventStreamSender::from(stream! {
+            yield Result::<_, SignMessageError>::Ok(TestMessage("test".into()));
+        }));
     }
 
     fn check_compatible_with_hyper_wrap_stream<S, O, E>(stream: S) -> S

@@ -7,7 +7,7 @@ This is the Amazon Fraud Detector API Reference. This guide is for developers wh
 
 We provide the Query API as well as AWS software development kits (SDK) for Amazon Fraud Detector in Java and Python programming languages.
 
-The Amazon Fraud Detector Query API provides HTTPS requests that use the HTTP verb GET or POST and a Query parameter Action. AWS SDK provides libraries, sample code, tutorials, and other resources for software developers who prefer to build applications using language-specific APIs instead of submitting a request over HTTP or HTTPS. These libraries provide basic functions that automatically take care of tasks such as cryptographically signing your requests, retrying requests, and handling error responses, so that it is easier for you to get started. For more information about the AWS SDKs, see [Tools to build on AWS](https://docs.aws.amazon.com/https:/aws.amazon.com/tools/).
+The Amazon Fraud Detector Query API provides HTTPS requests that use the HTTP verb GET or POST and a Query parameter Action. AWS SDK provides libraries, sample code, tutorials, and other resources for software developers who prefer to build applications using language-specific APIs instead of submitting a request over HTTP or HTTPS. These libraries provide basic functions that automatically take care of tasks such as cryptographically signing your requests, retrying requests, and handling error responses, so that it is easier for you to get started. For more information about the AWS SDKs, go to [Tools to build on AWS](https://aws.amazon.com/developer/tools/) page, scroll down to the __SDK__ section, and choose plus (+) sign to expand the section.
 
 ## Getting Started
 
@@ -20,20 +20,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-frauddetector = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-frauddetector = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_frauddetector as frauddetector;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), frauddetector::Error> {
     let config = aws_config::load_from_env().await;
-    let client = frauddetector::Client::new(&config);
+    let client = aws_sdk_frauddetector::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -53,7 +53,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

@@ -3,9 +3,9 @@
 **Please Note: The SDK is currently in Developer Preview and is intended strictly for
 feedback purposes only. Do not use this SDK for production workloads.**
 
-DataSync is a managed data transfer service that makes it simpler for you to automate moving data between on-premises storage and Amazon Simple Storage Service (Amazon S3) or Amazon Elastic File System (Amazon EFS).
+DataSync is an online data movement and discovery service that simplifies data migration and helps you quickly, easily, and securely transfer your file or object data to, from, and between Amazon Web Services storage services.
 
-This API interface reference for DataSync contains documentation for a programming interface that you can use to manage DataSync.
+This API interface reference includes documentation for using DataSync programmatically. For complete information, see the _ [DataSync User Guide](https://docs.aws.amazon.com/datasync/latest/userguide/what-is-datasync.html) _.
 
 ## Getting Started
 
@@ -18,20 +18,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-datasync = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-datasync = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_datasync as datasync;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), datasync::Error> {
     let config = aws_config::load_from_env().await;
-    let client = datasync::Client::new(&config);
+    let client = aws_sdk_datasync::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -51,7 +51,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

@@ -1,5 +1,5 @@
 {
-    "smithy": "1.0",
+    "smithy": "2.0",
     "metadata": {
         "suppressions": [
             {
@@ -99,6 +99,7 @@
                 "Index": {
                     "target": "com.amazonaws.backupstorage#long",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "Chunk index",
                         "smithy.api#required": {}
                     }
@@ -106,6 +107,7 @@
                 "Length": {
                     "target": "com.amazonaws.backupstorage#long",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "Chunk length",
                         "smithy.api#required": {}
                     }
@@ -144,21 +146,6 @@
         },
         "com.amazonaws.backupstorage#CryoStorageFrontendService": {
             "type": "service",
-            "traits": {
-                "aws.api#service": {
-                    "sdkId": "BackupStorage",
-                    "arnNamespace": "backup-storage",
-                    "cloudFormationName": "BackupStorage",
-                    "cloudTrailEventSource": "backupstorage.amazonaws.com",
-                    "endpointPrefix": "backupstorage"
-                },
-                "aws.auth#sigv4": {
-                    "name": "backup-storage"
-                },
-                "aws.protocols#restJson1": {},
-                "smithy.api#documentation": "The frontend service for Cryo Storage.",
-                "smithy.api#title": "AWS Backup Storage"
-            },
             "version": "2018-04-10",
             "operations": [
                 {
@@ -188,7 +175,650 @@
                 {
                     "target": "com.amazonaws.backupstorage#StartObject"
                 }
-            ]
+            ],
+            "traits": {
+                "aws.api#service": {
+                    "sdkId": "BackupStorage",
+                    "arnNamespace": "backup-storage",
+                    "cloudFormationName": "BackupStorage",
+                    "cloudTrailEventSource": "backupstorage.amazonaws.com",
+                    "endpointPrefix": "backupstorage"
+                },
+                "aws.auth#sigv4": {
+                    "name": "backup-storage"
+                },
+                "aws.protocols#restJson1": {},
+                "smithy.api#documentation": "The frontend service for Cryo Storage.",
+                "smithy.api#title": "AWS Backup Storage",
+                "smithy.rules#endpointRuleSet": {
+                    "version": "1.0",
+                    "parameters": {
+                        "Region": {
+                            "builtIn": "AWS::Region",
+                            "required": false,
+                            "documentation": "The AWS region used to dispatch the request.",
+                            "type": "String"
+                        },
+                        "UseDualStack": {
+                            "builtIn": "AWS::UseDualStack",
+                            "required": true,
+                            "default": false,
+                            "documentation": "When true, use the dual-stack endpoint. If the configured endpoint does not support dual-stack, dispatching the request MAY return an error.",
+                            "type": "Boolean"
+                        },
+                        "UseFIPS": {
+                            "builtIn": "AWS::UseFIPS",
+                            "required": true,
+                            "default": false,
+                            "documentation": "When true, send this request to the FIPS-compliant regional endpoint. If the configured endpoint does not have a FIPS compliant endpoint, dispatching the request will return an error.",
+                            "type": "Boolean"
+                        },
+                        "Endpoint": {
+                            "builtIn": "SDK::Endpoint",
+                            "required": false,
+                            "documentation": "Override the endpoint used to send this request",
+                            "type": "String"
+                        }
+                    },
+                    "rules": [
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Endpoint"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseFIPS"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: FIPS and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseDualStack"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
+                                    "conditions": [],
+                                    "endpoint": {
+                                        "url": {
+                                            "ref": "Endpoint"
+                                        },
+                                        "properties": {},
+                                        "headers": {}
+                                    },
+                                    "type": "endpoint"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Region"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "aws.partition",
+                                            "argv": [
+                                                {
+                                                    "ref": "Region"
+                                                }
+                                            ],
+                                            "assign": "PartitionResult"
+                                        }
+                                    ],
+                                    "rules": [
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                },
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://backupstorage-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                },
+                                                                true
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://backupstorage-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS is enabled but this partition does not support FIPS",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://backupstorage.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "DualStack is enabled but this partition does not support DualStack",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [],
+                                            "endpoint": {
+                                                "url": "https://backupstorage.{Region}.{PartitionResult#dnsSuffix}",
+                                                "properties": {},
+                                                "headers": {}
+                                            },
+                                            "type": "endpoint"
+                                        }
+                                    ],
+                                    "type": "tree"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [],
+                            "error": "Invalid Configuration: Missing Region",
+                            "type": "error"
+                        }
+                    ]
+                },
+                "smithy.rules#endpointTests": {
+                    "testCases": [
+                        {
+                            "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage-fips.us-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage-fips.us-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage.us-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage.us-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage-fips.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage-fips.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage-fips.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage-fips.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage-fips.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage-fips.us-isob-east-1.sc2s.sgov.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://backupstorage.us-isob-east-1.sc2s.sgov.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region not set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with fips enabled and dualstack disabled",
+                            "expect": {
+                                "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with fips disabled and dualstack enabled",
+                            "expect": {
+                                "error": "Invalid Configuration: Dualstack and custom endpoint are not supported"
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
+                            }
+                        }
+                    ],
+                    "version": "1.0"
+                }
+            }
         },
         "com.amazonaws.backupstorage#DataAlreadyExistsException": {
             "type": "structure",
@@ -216,14 +846,14 @@
             }
         },
         "com.amazonaws.backupstorage#DataChecksumAlgorithm": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "SHA256",
-                        "name": "SHA256"
+            "type": "enum",
+            "members": {
+                "SHA256": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "SHA256"
                     }
-                ]
+                }
             }
         },
         "com.amazonaws.backupstorage#DeleteObject": {
@@ -285,6 +915,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#GetChunk": {
@@ -346,6 +979,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#GetChunkOutput": {
@@ -362,6 +998,7 @@
                 "Length": {
                     "target": "com.amazonaws.backupstorage#long",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "Data length",
                         "smithy.api#httpHeader": "x-amz-data-length",
                         "smithy.api#required": {}
@@ -383,6 +1020,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.backupstorage#GetObjectMetadata": {
@@ -447,6 +1087,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#GetObjectMetadataOutput": {
@@ -462,6 +1105,7 @@
                 "MetadataBlob": {
                     "target": "com.amazonaws.backupstorage#PayloadBlob",
                     "traits": {
+                        "smithy.api#default": "",
                         "smithy.api#documentation": "Metadata blob.",
                         "smithy.api#httpPayload": {}
                     }
@@ -469,6 +1113,7 @@
                 "MetadataBlobLength": {
                     "target": "com.amazonaws.backupstorage#long",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "The size of MetadataBlob.",
                         "smithy.api#httpHeader": "x-amz-data-length"
                     }
@@ -487,6 +1132,9 @@
                         "smithy.api#httpHeader": "x-amz-checksum-algorithm"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.backupstorage#IllegalArgumentException": {
@@ -590,6 +1238,9 @@
                         "smithy.api#httpQuery": "next-token"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#ListChunksOutput": {
@@ -608,6 +1259,9 @@
                         "smithy.api#documentation": "Pagination token"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.backupstorage#ListObjects": {
@@ -711,6 +1365,9 @@
                         "smithy.api#httpQuery": "created-after"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#ListObjectsOutput": {
@@ -729,6 +1386,9 @@
                         "smithy.api#documentation": "Pagination token"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.backupstorage#MaxResults": {
@@ -851,6 +1511,7 @@
                 "MetadataBlob": {
                     "target": "com.amazonaws.backupstorage#PayloadBlob",
                     "traits": {
+                        "smithy.api#default": "",
                         "smithy.api#documentation": "Optional metadata associated with an Object. Maximum length is 4MB.",
                         "smithy.api#httpPayload": {}
                     }
@@ -858,6 +1519,7 @@
                 "MetadataBlobLength": {
                     "target": "com.amazonaws.backupstorage#long",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "The size of MetadataBlob.",
                         "smithy.api#httpQuery": "metadata-blob-length"
                     }
@@ -876,6 +1538,9 @@
                         "smithy.api#httpQuery": "metadata-checksum-algorithm"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#NotifyObjectCompleteOutput": {
@@ -895,6 +1560,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.backupstorage#ObjectList": {
@@ -904,10 +1572,7 @@
             }
         },
         "com.amazonaws.backupstorage#OptionalLong": {
-            "type": "long",
-            "traits": {
-                "smithy.api#box": {}
-            }
+            "type": "long"
         },
         "com.amazonaws.backupstorage#PayloadBlob": {
             "type": "blob",
@@ -984,6 +1649,7 @@
                 "ChunkIndex": {
                     "target": "com.amazonaws.backupstorage#long",
                     "traits": {
+                        "smithy.api#default": null,
                         "smithy.api#documentation": "Describes this chunk's position relative to the other chunks",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
@@ -1000,6 +1666,7 @@
                 "Length": {
                     "target": "com.amazonaws.backupstorage#long",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "Data length",
                         "smithy.api#httpQuery": "length",
                         "smithy.api#required": {}
@@ -1021,6 +1688,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#PutChunkOutput": {
@@ -1040,6 +1710,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.backupstorage#PutObject": {
@@ -1118,6 +1791,7 @@
                 "InlineChunk": {
                     "target": "com.amazonaws.backupstorage#PayloadBlob",
                     "traits": {
+                        "smithy.api#default": "",
                         "smithy.api#documentation": "Inline chunk data to be uploaded.",
                         "smithy.api#httpPayload": {}
                     }
@@ -1125,6 +1799,7 @@
                 "InlineChunkLength": {
                     "target": "com.amazonaws.backupstorage#long",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "Length of the inline chunk data.",
                         "smithy.api#httpQuery": "length"
                     }
@@ -1160,10 +1835,14 @@
                 "ThrowOnDuplicate": {
                     "target": "com.amazonaws.backupstorage#boolean",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "Throw an exception if Object name is already exist.",
                         "smithy.api#httpQuery": "throwOnDuplicate"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#PutObjectOutput": {
@@ -1197,6 +1876,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.backupstorage#ResourceNotFoundException": {
@@ -1319,9 +2001,13 @@
                 "ThrowOnDuplicate": {
                     "target": "com.amazonaws.backupstorage#boolean",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "Throw an exception if Object name is already exist."
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.backupstorage#StartObjectOutput": {
@@ -1334,17 +2020,20 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.backupstorage#SummaryChecksumAlgorithm": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "SUMMARY",
-                        "name": "SUMMARY"
+            "type": "enum",
+            "members": {
+                "SUMMARY": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "SUMMARY"
                     }
-                ]
+                }
             }
         },
         "com.amazonaws.backupstorage#ThrottlingException": {
@@ -1361,10 +2050,16 @@
             }
         },
         "com.amazonaws.backupstorage#boolean": {
-            "type": "boolean"
+            "type": "boolean",
+            "traits": {
+                "smithy.api#default": false
+            }
         },
         "com.amazonaws.backupstorage#long": {
-            "type": "long"
+            "type": "long",
+            "traits": {
+                "smithy.api#default": 0
+            }
         },
         "com.amazonaws.backupstorage#string": {
             "type": "string"

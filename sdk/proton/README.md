@@ -15,9 +15,7 @@ Because administrators define the infrastructure and tooling that Proton deploys
 
 When developers select a specific infrastructure and tooling set, Proton deploys their applications. To monitor their applications that are running on Proton, developers need permissions to the service _create_, _list_, _update_ and _delete_ API operations and the service instance _list_ and _update_ API operations.
 
-To learn more about Proton administration, see the [Proton Administrator Guide](https://docs.aws.amazon.com/proton/latest/adminguide/Welcome.html).
-
-To learn more about deploying serverless and containerized applications on Proton, see the [Proton User Guide](https://docs.aws.amazon.com/proton/latest/userguide/Welcome.html).
+To learn more about Proton, see the [Proton User Guide](https://docs.aws.amazon.com/proton/latest/userguide/Welcome.html).
 
 __Ensuring Idempotency__
 
@@ -102,20 +100,20 @@ your project, add the following to your **Cargo.toml** file:
 
 ```toml
 [dependencies]
-aws-config = "0.48.0"
-aws-sdk-proton = "0.18.0"
+aws-config = "0.57.1"
+aws-sdk-proton = "0.35.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 Then in code, a client can be created with the following:
 
-```rust
+```rust,no_run
 use aws_sdk_proton as proton;
 
-#[tokio::main]
+#[::tokio::main]
 async fn main() -> Result<(), proton::Error> {
     let config = aws_config::load_from_env().await;
-    let client = proton::Client::new(&config);
+    let client = aws_sdk_proton::Client::new(&config);
 
     // ... make some calls with the client
 
@@ -135,7 +133,7 @@ additional sections for the guide by opening an issue and describing what you ar
 ## Getting Help
 
 * [GitHub discussions](https://github.com/awslabs/aws-sdk-rust/discussions) - For ideas, RFCs & general questions
-* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) – For bug reports & feature requests
+* [GitHub issues](https://github.com/awslabs/aws-sdk-rust/issues/new/choose) - For bug reports & feature requests
 * [Generated Docs (latest version)](https://awslabs.github.io/aws-sdk-rust/)
 * [Usage examples](https://github.com/awslabs/aws-sdk-rust/tree/main/examples)
 

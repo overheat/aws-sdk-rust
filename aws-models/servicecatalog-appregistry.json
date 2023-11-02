@@ -1,5 +1,5 @@
 {
-    "smithy": "1.0",
+    "smithy": "2.0",
     "metadata": {
         "suppressions": [
             {
@@ -31,21 +31,6 @@
     "shapes": {
         "com.amazonaws.servicecatalogappregistry#AWS242AppRegistry": {
             "type": "service",
-            "traits": {
-                "aws.api#service": {
-                    "sdkId": "Service Catalog AppRegistry",
-                    "arnNamespace": "servicecatalog",
-                    "cloudFormationName": "ServiceCatalogAppRegistry",
-                    "cloudTrailEventSource": "servicecatalogappregistry.amazonaws.com",
-                    "endpointPrefix": "servicecatalog-appregistry"
-                },
-                "aws.auth#sigv4": {
-                    "name": "servicecatalog"
-                },
-                "aws.protocols#restJson1": {},
-                "smithy.api#documentation": "<p> Amazon Web Services Service Catalog AppRegistry enables organizations to understand the application context of their Amazon Web Services resources. AppRegistry provides a repository of your applications, their resources, and the application metadata that you use within your enterprise.</p>",
-                "smithy.api#title": "AWS Service Catalog App Registry"
-            },
             "version": "2020-06-24",
             "operations": [
                 {
@@ -82,6 +67,9 @@
                     "target": "com.amazonaws.servicecatalogappregistry#GetAttributeGroup"
                 },
                 {
+                    "target": "com.amazonaws.servicecatalogappregistry#GetConfiguration"
+                },
+                {
                     "target": "com.amazonaws.servicecatalogappregistry#ListApplications"
                 },
                 {
@@ -100,6 +88,9 @@
                     "target": "com.amazonaws.servicecatalogappregistry#ListTagsForResource"
                 },
                 {
+                    "target": "com.amazonaws.servicecatalogappregistry#PutConfiguration"
+                },
+                {
                     "target": "com.amazonaws.servicecatalogappregistry#SyncResource"
                 },
                 {
@@ -114,7 +105,1028 @@
                 {
                     "target": "com.amazonaws.servicecatalogappregistry#UpdateAttributeGroup"
                 }
-            ]
+            ],
+            "traits": {
+                "aws.api#service": {
+                    "sdkId": "Service Catalog AppRegistry",
+                    "arnNamespace": "servicecatalog",
+                    "cloudFormationName": "ServiceCatalogAppRegistry",
+                    "cloudTrailEventSource": "servicecatalogappregistry.amazonaws.com",
+                    "docId": "AWS242AppRegistry-2020-06-24",
+                    "endpointPrefix": "servicecatalog-appregistry"
+                },
+                "aws.auth#sigv4": {
+                    "name": "servicecatalog"
+                },
+                "aws.protocols#restJson1": {},
+                "smithy.api#documentation": "<p> Amazon Web Services Service Catalog AppRegistry enables organizations to understand the application context of their Amazon Web Services resources. AppRegistry provides a repository of your applications, their resources, and the application metadata that you use within your enterprise.</p>",
+                "smithy.api#title": "AWS Service Catalog App Registry",
+                "smithy.rules#endpointRuleSet": {
+                    "version": "1.0",
+                    "parameters": {
+                        "Region": {
+                            "builtIn": "AWS::Region",
+                            "required": false,
+                            "documentation": "The AWS region used to dispatch the request.",
+                            "type": "String"
+                        },
+                        "UseDualStack": {
+                            "builtIn": "AWS::UseDualStack",
+                            "required": true,
+                            "default": false,
+                            "documentation": "When true, use the dual-stack endpoint. If the configured endpoint does not support dual-stack, dispatching the request MAY return an error.",
+                            "type": "Boolean"
+                        },
+                        "UseFIPS": {
+                            "builtIn": "AWS::UseFIPS",
+                            "required": true,
+                            "default": false,
+                            "documentation": "When true, send this request to the FIPS-compliant regional endpoint. If the configured endpoint does not have a FIPS compliant endpoint, dispatching the request will return an error.",
+                            "type": "Boolean"
+                        },
+                        "Endpoint": {
+                            "builtIn": "SDK::Endpoint",
+                            "required": false,
+                            "documentation": "Override the endpoint used to send this request",
+                            "type": "String"
+                        }
+                    },
+                    "rules": [
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Endpoint"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseFIPS"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: FIPS and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseDualStack"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
+                                    "conditions": [],
+                                    "endpoint": {
+                                        "url": {
+                                            "ref": "Endpoint"
+                                        },
+                                        "properties": {},
+                                        "headers": {}
+                                    },
+                                    "type": "endpoint"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Region"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "aws.partition",
+                                            "argv": [
+                                                {
+                                                    "ref": "Region"
+                                                }
+                                            ],
+                                            "assign": "PartitionResult"
+                                        }
+                                    ],
+                                    "rules": [
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                },
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://servicecatalog-appregistry-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                },
+                                                                true
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [
+                                                                {
+                                                                    "fn": "stringEquals",
+                                                                    "argv": [
+                                                                        {
+                                                                            "fn": "getAttr",
+                                                                            "argv": [
+                                                                                {
+                                                                                    "ref": "PartitionResult"
+                                                                                },
+                                                                                "name"
+                                                                            ]
+                                                                        },
+                                                                        "aws-us-gov"
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "endpoint": {
+                                                                "url": "https://servicecatalog-appregistry.{Region}.amazonaws.com",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        },
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://servicecatalog-appregistry-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS is enabled but this partition does not support FIPS",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://servicecatalog-appregistry.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "DualStack is enabled but this partition does not support DualStack",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [],
+                                            "endpoint": {
+                                                "url": "https://servicecatalog-appregistry.{Region}.{PartitionResult#dnsSuffix}",
+                                                "properties": {},
+                                                "headers": {}
+                                            },
+                                            "type": "endpoint"
+                                        }
+                                    ],
+                                    "type": "tree"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [],
+                            "error": "Invalid Configuration: Missing Region",
+                            "type": "error"
+                        }
+                    ]
+                },
+                "smithy.rules#endpointTests": {
+                    "testCases": [
+                        {
+                            "documentation": "For region af-south-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.af-south-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "af-south-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ap-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-northeast-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ap-northeast-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-northeast-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-northeast-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ap-northeast-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-northeast-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-northeast-3 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ap-northeast-3.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-northeast-3",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-south-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ap-south-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-south-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-southeast-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ap-southeast-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-southeast-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-southeast-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ap-southeast-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-southeast-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-southeast-3 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ap-southeast-3.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-southeast-3",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ca-central-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.ca-central-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ca-central-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ca-central-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.ca-central-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ca-central-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-central-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.eu-central-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-central-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-north-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.eu-north-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-south-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.eu-south-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-south-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-west-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.eu-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-west-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-west-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.eu-west-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-west-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-west-3 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.eu-west-3.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-west-3",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region me-south-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.me-south-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "me-south-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region sa-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.sa-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "sa-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.us-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-east-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-2 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.us-east-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-2",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-west-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-west-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-west-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.us-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-west-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-west-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-west-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-west-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-west-2 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.us-west-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-west-2",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.us-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-west-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-gov-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-west-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry-fips.us-isob-east-1.sc2s.sgov.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://servicecatalog-appregistry.us-isob-east-1.sc2s.sgov.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region not set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with fips enabled and dualstack disabled",
+                            "expect": {
+                                "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with fips disabled and dualstack enabled",
+                            "expect": {
+                                "error": "Invalid Configuration: Dualstack and custom endpoint are not supported"
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
+                            }
+                        }
+                    ],
+                    "version": "1.0"
+                }
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#AppRegistryConfiguration": {
+            "type": "structure",
+            "members": {
+                "tagQueryConfiguration": {
+                    "target": "com.amazonaws.servicecatalogappregistry#TagQueryConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n      Includes the definition \n      of a <code>tagQuery</code>.\n    </p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>\n      Includes all \n      of the AppRegistry settings.\n    </p>"
+            }
         },
         "com.amazonaws.servicecatalogappregistry#Application": {
             "type": "structure",
@@ -189,7 +1201,7 @@
                     "min": 1,
                     "max": 256
                 },
-                "smithy.api#pattern": "^[-.\\w]+$"
+                "smithy.api#pattern": "^([-.\\w]+)|(arn:aws[-a-z]*:servicecatalog:[a-z]{2}(-gov)?-[a-z]+-\\d:\\d{12}:/applications/[-.\\w]+)$"
             }
         },
         "com.amazonaws.servicecatalogappregistry#ApplicationSummaries": {
@@ -292,7 +1304,7 @@
                 "application": {
                     "target": "com.amazonaws.servicecatalogappregistry#ApplicationSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
@@ -300,11 +1312,14 @@
                 "attributeGroup": {
                     "target": "com.amazonaws.servicecatalogappregistry#AttributeGroupSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the attribute group that holds the attributes to describe the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the attribute group \n       that holds the attributes \n       to describe the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#AssociateAttributeGroupResponse": {
@@ -322,6 +1337,9 @@
                         "smithy.api#documentation": "<p>The Amazon resource name (ARN) of the attribute group that contains the application's new attributes.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#AssociateResource": {
@@ -346,11 +1364,14 @@
                     "target": "com.amazonaws.servicecatalogappregistry#ServiceQuotaExceededException"
                 },
                 {
+                    "target": "com.amazonaws.servicecatalogappregistry#ThrottlingException"
+                },
+                {
                     "target": "com.amazonaws.servicecatalogappregistry#ValidationException"
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Associates a resource with an application. Both the resource and the application can be specified either by ID or name.</p>",
+                "smithy.api#documentation": "<p>\n       Associates a resource \n       with an application. \n       The resource can be specified \n       by its ARN or name. \n       The application can be specified \n       by ARN, ID, or name.\n     </p>",
                 "smithy.api#http": {
                     "method": "PUT",
                     "uri": "/applications/{application}/resources/{resourceType}/{resource}",
@@ -364,7 +1385,7 @@
                 "application": {
                     "target": "com.amazonaws.servicecatalogappregistry#ApplicationSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
@@ -385,6 +1406,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#AssociateResourceResponse": {
@@ -402,11 +1426,15 @@
                         "smithy.api#documentation": "<p>The Amazon resource name (ARN) that specifies the resource.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#AssociationCount": {
             "type": "integer",
             "traits": {
+                "smithy.api#default": 0,
                 "smithy.api#range": {
                     "min": 0
                 }
@@ -465,7 +1493,7 @@
         "com.amazonaws.servicecatalogappregistry#AttributeGroupArn": {
             "type": "string",
             "traits": {
-                "smithy.api#pattern": "^arn:aws[-a-z]*:servicecatalog:[a-z]{2}(-gov)?-[a-z]+-\\d:\\d{12}:/attribute-groups/[a-z0-9]+$"
+                "smithy.api#pattern": "^arn:aws[-a-z]*:servicecatalog:[a-z]{2}(-gov)?-[a-z]+-\\d:\\d{12}:/attribute-groups/[-.\\w]+$"
             }
         },
         "com.amazonaws.servicecatalogappregistry#AttributeGroupDetails": {
@@ -486,12 +1514,21 @@
                 "name": {
                     "target": "com.amazonaws.servicecatalogappregistry#Name",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name of the attribute group. </p>"
+                        "smithy.api#deprecated": {
+                            "message": "This field is deprecated. We recommend not using the field when using ListAttributeGroupsForApplication."
+                        },
+                        "smithy.api#documentation": "<important>\n            <p>\n        This field is no longer supported.\n        We recommend\n        you don't use the field when using <code>ListAttributeGroupsForApplication</code>.\n      </p>\n         </important>\n         <p>\n      The name of the attribute group.\n    </p>"
+                    }
+                },
+                "createdBy": {
+                    "target": "com.amazonaws.servicecatalogappregistry#CreatedBy",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The service principal that created the attribute group.</p>"
                     }
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p> The details related to a specific AttributeGroup. </p>"
+                "smithy.api#documentation": "<p>\n      The details related to a specific AttributeGroup.\n    </p>"
             }
         },
         "com.amazonaws.servicecatalogappregistry#AttributeGroupDetailsList": {
@@ -504,10 +1541,10 @@
             "type": "string",
             "traits": {
                 "smithy.api#length": {
-                    "min": 26,
-                    "max": 26
+                    "min": 1,
+                    "max": 256
                 },
-                "smithy.api#pattern": "^[a-z0-9]+$"
+                "smithy.api#pattern": "^[-.\\w]+$"
             }
         },
         "com.amazonaws.servicecatalogappregistry#AttributeGroupIds": {
@@ -521,9 +1558,9 @@
             "traits": {
                 "smithy.api#length": {
                     "min": 1,
-                    "max": 256
+                    "max": 512
                 },
-                "smithy.api#pattern": "^[-.\\w]+$"
+                "smithy.api#pattern": "^([-.\\w]+)|(arn:aws[-a-z]*:servicecatalog:[a-z]{2}(-gov)?-[a-z]+-\\d:\\d{12}:/attribute-groups/[-.\\w]+)$"
             }
         },
         "com.amazonaws.servicecatalogappregistry#AttributeGroupSummaries": {
@@ -570,6 +1607,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The ISO-8601 formatted timestamp of the moment the attribute group was last updated. This time is the same as the creationTime for a newly created attribute group.</p>"
                     }
+                },
+                "createdBy": {
+                    "target": "com.amazonaws.servicecatalogappregistry#CreatedBy",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The service principal that created the attribute group.</p>"
+                    }
                 }
             },
             "traits": {
@@ -604,7 +1647,7 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>There was a conflict when processing the request (for example, a resource with the given name already\n      exists within the account).</p>",
+                "smithy.api#documentation": "<p>There was a conflict when processing the request (for example, a resource with the given\n      name already exists within the account).</p>",
                 "smithy.api#error": "client",
                 "smithy.api#httpError": 409
             }
@@ -626,6 +1669,9 @@
                 },
                 {
                     "target": "com.amazonaws.servicecatalogappregistry#ServiceQuotaExceededException"
+                },
+                {
+                    "target": "com.amazonaws.servicecatalogappregistry#ThrottlingException"
                 },
                 {
                     "target": "com.amazonaws.servicecatalogappregistry#ValidationException"
@@ -670,6 +1716,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#CreateApplicationResponse": {
@@ -681,6 +1730,9 @@
                         "smithy.api#documentation": "<p>Information about the application.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#CreateAttributeGroup": {
@@ -751,6 +1803,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#CreateAttributeGroupResponse": {
@@ -762,6 +1817,19 @@
                         "smithy.api#documentation": "<p>Information about the attribute group.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#CreatedBy": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 128
+                },
+                "smithy.api#pattern": "^(?!-)([a-z0-9-]+\\.)+(aws\\.internal|amazonaws\\.com(\\.cn)?)$"
             }
         },
         "com.amazonaws.servicecatalogappregistry#DeleteApplication": {
@@ -784,7 +1852,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes an application that is specified either by its application ID or name. All associated attribute groups and resources must be disassociated from it before deleting an application.</p>",
+                "smithy.api#documentation": "<p>Deletes an application that is specified either by its application ID, name, or ARN. All associated attribute groups and resources must be disassociated from it before deleting an application.</p>",
                 "smithy.api#http": {
                     "method": "DELETE",
                     "uri": "/applications/{application}",
@@ -798,11 +1866,14 @@
                 "application": {
                     "target": "com.amazonaws.servicecatalogappregistry#ApplicationSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#DeleteApplicationResponse": {
@@ -814,6 +1885,9 @@
                         "smithy.api#documentation": "<p>Information about the deleted application.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#DeleteAttributeGroup": {
@@ -836,7 +1910,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes an attribute group, specified either by its attribute group ID or name.</p>",
+                "smithy.api#documentation": "<p>Deletes an attribute group, specified either by its attribute group ID, name, or ARN.</p>",
                 "smithy.api#http": {
                     "method": "DELETE",
                     "uri": "/attribute-groups/{attributeGroup}",
@@ -850,11 +1924,14 @@
                 "attributeGroup": {
                     "target": "com.amazonaws.servicecatalogappregistry#AttributeGroupSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the attribute group that holds the attributes to describe the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the attribute group \n       that holds the attributes \n       to describe the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#DeleteAttributeGroupResponse": {
@@ -866,6 +1943,9 @@
                         "smithy.api#documentation": "<p>Information about the deleted attribute group.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#Description": {
@@ -911,7 +1991,7 @@
                 "application": {
                     "target": "com.amazonaws.servicecatalogappregistry#ApplicationSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
@@ -919,11 +1999,14 @@
                 "attributeGroup": {
                     "target": "com.amazonaws.servicecatalogappregistry#AttributeGroupSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the attribute group that holds the attributes to describe the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the attribute group \n       that holds the attributes \n       to describe the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#DisassociateAttributeGroupResponse": {
@@ -941,6 +2024,9 @@
                         "smithy.api#documentation": "<p>The Amazon resource name (ARN) that specifies the attribute group.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#DisassociateResource": {
@@ -957,6 +2043,9 @@
                 },
                 {
                     "target": "com.amazonaws.servicecatalogappregistry#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.servicecatalogappregistry#ThrottlingException"
                 },
                 {
                     "target": "com.amazonaws.servicecatalogappregistry#ValidationException"
@@ -998,6 +2087,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#DisassociateResourceResponse": {
@@ -1015,6 +2107,9 @@
                         "smithy.api#documentation": "<p>The Amazon resource name (ARN) that specifies the resource.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#GetApplication": {
@@ -1040,7 +2135,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Retrieves metadata information about one of your applications. The application can be specified either by its unique ID or by its name (which is unique within one account in one region at a given point in time). Specify by ID in automated workflows if you want to make sure that the exact same application is returned or a <code>ResourceNotFoundException</code> is thrown, avoiding the ABA addressing problem.</p>",
+                "smithy.api#documentation": "<p>\n       Retrieves metadata information \n       about one \n       of your applications. \n       The application can be specified \n       by its ARN, ID, or name \n       (which is unique \n       within one account \n       in one region \n       at a given point \n       in time). \n       Specify \n       by ARN or ID \n       in automated workflows \n       if you want \n       to make sure \n       that the exact same application is returned or a <code>ResourceNotFoundException</code> is thrown, \n       avoiding the ABA addressing problem.\n     </p>",
                 "smithy.api#http": {
                     "method": "GET",
                     "uri": "/applications/{application}",
@@ -1054,11 +2149,14 @@
                 "application": {
                     "target": "com.amazonaws.servicecatalogappregistry#ApplicationSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#GetApplicationResponse": {
@@ -1103,6 +2201,7 @@
                 "associatedResourceCount": {
                     "target": "com.amazonaws.servicecatalogappregistry#AssociationCount",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The number of top-level resources that were registered as part of this application.</p>"
                     }
                 },
@@ -1115,9 +2214,12 @@
                 "integrations": {
                     "target": "com.amazonaws.servicecatalogappregistry#Integrations",
                     "traits": {
-                        "smithy.api#documentation": "<p>The information about the integration of the application with other services, such as Resource Groups.</p>"
+                        "smithy.api#documentation": "<p>\n       The information \n       about the integration \n       of the application \n       with other services, \n       such as\n        Resource Groups.\n     </p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#GetAssociatedResource": {
@@ -1155,7 +2257,7 @@
                 "application": {
                     "target": "com.amazonaws.servicecatalogappregistry#ApplicationSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
@@ -1176,6 +2278,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#GetAssociatedResourceResponse": {
@@ -1187,6 +2292,9 @@
                         "smithy.api#documentation": "<p>The resource associated with the application.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#GetAttributeGroup": {
@@ -1212,7 +2320,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Retrieves an attribute group, either by its name or its ID. The attribute group can be specified either by its unique ID or by its name.</p>",
+                "smithy.api#documentation": "<p>\n       Retrieves an attribute group\n       by its ARN, ID, or name. \n       The attribute group can be specified \n       by its ARN, ID, or name.\n     </p>",
                 "smithy.api#http": {
                     "method": "GET",
                     "uri": "/attribute-groups/{attributeGroup}",
@@ -1226,11 +2334,14 @@
                 "attributeGroup": {
                     "target": "com.amazonaws.servicecatalogappregistry#AttributeGroupSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the attribute group that holds the attributes to describe the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the attribute group \n       that holds the attributes \n       to describe the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#GetAttributeGroupResponse": {
@@ -1283,7 +2394,52 @@
                     "traits": {
                         "smithy.api#documentation": "<p>Key-value pairs associated with the attribute group.</p>"
                     }
+                },
+                "createdBy": {
+                    "target": "com.amazonaws.servicecatalogappregistry#CreatedBy",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The service principal that created the attribute group.</p>"
+                    }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#GetConfiguration": {
+            "type": "operation",
+            "input": {
+                "target": "smithy.api#Unit"
+            },
+            "output": {
+                "target": "com.amazonaws.servicecatalogappregistry#GetConfigurationResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.servicecatalogappregistry#InternalServerException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>\n      Retrieves a <code>TagKey</code> configuration\n      from an account.\n    </p>",
+                "smithy.api#http": {
+                    "method": "GET",
+                    "uri": "/configuration",
+                    "code": 200
+                }
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#GetConfigurationResponse": {
+            "type": "structure",
+            "members": {
+                "configuration": {
+                    "target": "com.amazonaws.servicecatalogappregistry#AppRegistryConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n      Retrieves <code>TagKey</code> configuration \n      from an account.\n    </p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#Integrations": {
@@ -1358,11 +2514,13 @@
                 "maxResults": {
                     "target": "com.amazonaws.servicecatalogappregistry#MaxResults",
                     "traits": {
-                        "smithy.api#box": {},
                         "smithy.api#documentation": "<p>The upper bound of the number of results to return (cannot exceed 25). If this parameter is omitted, it defaults to 25. This value is optional.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListApplicationsResponse": {
@@ -1380,6 +2538,9 @@
                         "smithy.api#documentation": "<p>The token to use to get the next page of results after a previous API call. </p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListAssociatedAttributeGroups": {
@@ -1438,11 +2599,13 @@
                 "maxResults": {
                     "target": "com.amazonaws.servicecatalogappregistry#MaxResults",
                     "traits": {
-                        "smithy.api#box": {},
                         "smithy.api#documentation": "<p>The upper bound of the number of results to return (cannot exceed 25). If this parameter is omitted, it defaults to 25. This value is optional.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListAssociatedAttributeGroupsResponse": {
@@ -1460,6 +2623,9 @@
                         "smithy.api#documentation": "<p>The token to use to get the next page of results after a previous API call. </p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListAssociatedResources": {
@@ -1482,7 +2648,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Lists all resources that are associated with specified application. Results are paginated.</p>",
+                "smithy.api#documentation": "<p>\n       Lists all \n       of the resources \n       that are associated \n       with the specified application.\n       Results are paginated.\n     </p>\n         <note>\n            <p>\n         If you share an application, \n         and a consumer account associates a tag query \n         to the application, \n         all of the users \n         who can access the application \n         can also view the tag values \n         in all accounts \n         that are associated \n         with it \n         using this API.\n       </p>\n         </note>",
                 "smithy.api#http": {
                     "method": "GET",
                     "uri": "/applications/{application}/resources",
@@ -1503,7 +2669,7 @@
                 "application": {
                     "target": "com.amazonaws.servicecatalogappregistry#ApplicationSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
@@ -1518,11 +2684,13 @@
                 "maxResults": {
                     "target": "com.amazonaws.servicecatalogappregistry#MaxResults",
                     "traits": {
-                        "smithy.api#box": {},
                         "smithy.api#documentation": "<p>The upper bound of the number of results to return (cannot exceed 25). If this parameter is omitted, it defaults to 25. This value is optional.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListAssociatedResourcesResponse": {
@@ -1540,6 +2708,9 @@
                         "smithy.api#documentation": "<p>The token to use to get the next page of results after a previous API call. </p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListAttributeGroups": {
@@ -1630,11 +2801,13 @@
                 "maxResults": {
                     "target": "com.amazonaws.servicecatalogappregistry#MaxResults",
                     "traits": {
-                        "smithy.api#box": {},
                         "smithy.api#documentation": "<p>The upper bound of the number of results to return. The value cannot exceed 25. If you omit this parameter, it defaults to 25. This value is optional.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListAttributeGroupsForApplicationResponse": {
@@ -1643,7 +2816,7 @@
                 "attributeGroupsDetails": {
                     "target": "com.amazonaws.servicecatalogappregistry#AttributeGroupDetailsList",
                     "traits": {
-                        "smithy.api#documentation": "<p> The details related to a specific AttributeGroup. </p>"
+                        "smithy.api#documentation": "<p> The details related to a specific attribute group. </p>"
                     }
                 },
                 "nextToken": {
@@ -1652,6 +2825,9 @@
                         "smithy.api#documentation": "<p>The token to use to get the next page of results after a previous API call.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListAttributeGroupsRequest": {
@@ -1667,11 +2843,13 @@
                 "maxResults": {
                     "target": "com.amazonaws.servicecatalogappregistry#MaxResults",
                     "traits": {
-                        "smithy.api#box": {},
                         "smithy.api#documentation": "<p>The upper bound of the number of results to return (cannot exceed 25). If this parameter is omitted, it defaults to 25. This value is optional.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListAttributeGroupsResponse": {
@@ -1689,6 +2867,9 @@
                         "smithy.api#documentation": "<p>The token to use to get the next page of results after a previous API call. </p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListTagsForResource": {
@@ -1730,6 +2911,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ListTagsForResourceResponse": {
@@ -1741,6 +2925,9 @@
                         "smithy.api#documentation": "<p>The tags on the resource.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#MaxResults": {
@@ -1748,7 +2935,7 @@
             "traits": {
                 "smithy.api#range": {
                     "min": 1,
-                    "max": 25
+                    "max": 100
                 }
             }
         },
@@ -1770,6 +2957,49 @@
                     "max": 2024
                 },
                 "smithy.api#pattern": "^[A-Za-z0-9+/=]+$"
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#PutConfiguration": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.servicecatalogappregistry#PutConfigurationRequest"
+            },
+            "output": {
+                "target": "smithy.api#Unit"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.servicecatalogappregistry#ConflictException"
+                },
+                {
+                    "target": "com.amazonaws.servicecatalogappregistry#InternalServerException"
+                },
+                {
+                    "target": "com.amazonaws.servicecatalogappregistry#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>\n      Associates a <code>TagKey</code> configuration \n      to an account.\n    </p>",
+                "smithy.api#http": {
+                    "method": "PUT",
+                    "uri": "/configuration",
+                    "code": 200
+                }
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#PutConfigurationRequest": {
+            "type": "structure",
+            "members": {
+                "configuration": {
+                    "target": "com.amazonaws.servicecatalogappregistry#AppRegistryConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n      Associates a <code>TagKey</code> configuration \n      to an account.\n    </p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#Resource": {
@@ -1804,6 +3034,20 @@
                 "smithy.api#documentation": "<p> The information about the resource.</p>"
             }
         },
+        "com.amazonaws.servicecatalogappregistry#ResourceDetails": {
+            "type": "structure",
+            "members": {
+                "tagValue": {
+                    "target": "com.amazonaws.servicecatalogappregistry#TagValue",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The value of the tag.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>\n      The details\n      related\n      to the\n      resource.\n    </p>"
+            }
+        },
         "com.amazonaws.servicecatalogappregistry#ResourceGroup": {
             "type": "structure",
             "members": {
@@ -1831,34 +3075,44 @@
             }
         },
         "com.amazonaws.servicecatalogappregistry#ResourceGroupState": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "CREATING",
-                        "name": "CREATING"
-                    },
-                    {
-                        "value": "CREATE_COMPLETE",
-                        "name": "CREATE_COMPLETE"
-                    },
-                    {
-                        "value": "CREATE_FAILED",
-                        "name": "CREATE_FAILED"
-                    },
-                    {
-                        "value": "UPDATING",
-                        "name": "UPDATING"
-                    },
-                    {
-                        "value": "UPDATE_COMPLETE",
-                        "name": "UPDATE_COMPLETE"
-                    },
-                    {
-                        "value": "UPDATE_FAILED",
-                        "name": "UPDATE_FAILED"
+            "type": "enum",
+            "members": {
+                "CREATING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "CREATING"
                     }
-                ]
+                },
+                "CREATE_COMPLETE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "CREATE_COMPLETE"
+                    }
+                },
+                "CREATE_FAILED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "CREATE_FAILED"
+                    }
+                },
+                "UPDATING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "UPDATING"
+                    }
+                },
+                "UPDATE_COMPLETE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "UPDATE_COMPLETE"
+                    }
+                },
+                "UPDATE_FAILED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "UPDATE_FAILED"
+                    }
+                }
             }
         },
         "com.amazonaws.servicecatalogappregistry#ResourceInfo": {
@@ -1871,9 +3125,21 @@
                     }
                 },
                 "arn": {
-                    "target": "com.amazonaws.servicecatalogappregistry#StackArn",
+                    "target": "com.amazonaws.servicecatalogappregistry#Arn",
                     "traits": {
                         "smithy.api#documentation": "<p>The Amazon resource name (ARN) that specifies the resource across services.</p>"
+                    }
+                },
+                "resourceType": {
+                    "target": "com.amazonaws.servicecatalogappregistry#ResourceType",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n      Provides information \n      about the Service Catalog App Registry resource type.\n    </p>"
+                    }
+                },
+                "resourceDetails": {
+                    "target": "com.amazonaws.servicecatalogappregistry#ResourceDetails",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n      The details related\n      to\n      the resource.\n    </p>"
                     }
                 }
             },
@@ -1919,14 +3185,20 @@
             }
         },
         "com.amazonaws.servicecatalogappregistry#ResourceType": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "CFN_STACK",
-                        "name": "CFN_STACK"
+            "type": "enum",
+            "members": {
+                "CFN_STACK": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "CFN_STACK"
                     }
-                ]
+                },
+                "RESOURCE_TAG_VALUE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "RESOURCE_TAG_VALUE"
+                    }
+                }
             }
         },
         "com.amazonaws.servicecatalogappregistry#Resources": {
@@ -1943,7 +3215,7 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The maximum number of resources per account has been reached.</p>",
+                "smithy.api#documentation": "<p>\n      The maximum number \n      of resources per account \n      has been reached.</p>",
                 "smithy.api#error": "client",
                 "smithy.api#httpError": 402
             }
@@ -1958,18 +3230,20 @@
             "type": "string"
         },
         "com.amazonaws.servicecatalogappregistry#SyncAction": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "START_SYNC",
-                        "name": "START_SYNC"
-                    },
-                    {
-                        "value": "NO_ACTION",
-                        "name": "NO_ACTION"
+            "type": "enum",
+            "members": {
+                "START_SYNC": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "START_SYNC"
                     }
-                ]
+                },
+                "NO_ACTION": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "NO_ACTION"
+                    }
+                }
             }
         },
         "com.amazonaws.servicecatalogappregistry#SyncResource": {
@@ -1989,10 +3263,16 @@
                 },
                 {
                     "target": "com.amazonaws.servicecatalogappregistry#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.servicecatalogappregistry#ThrottlingException"
+                },
+                {
+                    "target": "com.amazonaws.servicecatalogappregistry#ValidationException"
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Syncs the resource with current AppRegistry records.</p> \n         <p>Specifically, the resource’s AppRegistry system tags sync with its associated application. We remove the resource's AppRegistry system tags if it does not associate with the application. The caller must have permissions to read and update the resource.</p>",
+                "smithy.api#documentation": "<p>Syncs the resource with current AppRegistry records.</p>\n         <p>Specifically, the resource’s AppRegistry system tags sync with its associated application. We remove the resource's AppRegistry system tags if it does not associate with the application. The caller must have permissions to read and update the resource.</p>",
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/sync/{resourceType}/{resource}",
@@ -2019,6 +3299,9 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#SyncResourceResponse": {
@@ -2042,6 +3325,9 @@
                         "smithy.api#documentation": "<p>The results of the output if an application is associated with an ARN value, which could be <code>syncStarted</code> or None.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#TagKey": {
@@ -2051,7 +3337,17 @@
                     "min": 1,
                     "max": 128
                 },
-                "smithy.api#pattern": "^(?!aws:)[a-zA-Z+-=._:/]+$"
+                "smithy.api#pattern": "^[a-zA-Z+-=._:/]+$"
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#TagKeyConfig": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 128
+                },
+                "smithy.api#pattern": "^(?!\\s+$)[\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*$"
             }
         },
         "com.amazonaws.servicecatalogappregistry#TagKeys": {
@@ -2064,6 +3360,20 @@
                     "min": 0,
                     "max": 50
                 }
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#TagQueryConfiguration": {
+            "type": "structure",
+            "members": {
+                "tagKey": {
+                    "target": "com.amazonaws.servicecatalogappregistry#TagKeyConfig",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n      Condition \n      in the IAM policy \n      that associates resources \n      to an application.\n    </p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>\n      The\n      definition\n      of <code>tagQuery</code>. \n      Specifies which resources are associated with an\n      application.\n    </p>"
             }
         },
         "com.amazonaws.servicecatalogappregistry#TagResource": {
@@ -2112,11 +3422,17 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#TagResourceResponse": {
             "type": "structure",
-            "members": {}
+            "members": {},
+            "traits": {
+                "smithy.api#output": {}
+            }
         },
         "com.amazonaws.servicecatalogappregistry#TagValue": {
             "type": "string",
@@ -2141,6 +3457,29 @@
                     "min": 0,
                     "max": 50
                 }
+            }
+        },
+        "com.amazonaws.servicecatalogappregistry#ThrottlingException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "com.amazonaws.servicecatalogappregistry#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A message associated with the Throttling exception.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "serviceCode": {
+                    "target": "com.amazonaws.servicecatalogappregistry#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The originating service code.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>\n      The maximum number \n      of API requests \n      has been exceeded.\n    </p>",
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 429
             }
         },
         "com.amazonaws.servicecatalogappregistry#Timestamp": {
@@ -2196,11 +3535,17 @@
                         "smithy.api#required": {}
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#UntagResourceResponse": {
             "type": "structure",
-            "members": {}
+            "members": {},
+            "traits": {
+                "smithy.api#output": {}
+            }
         },
         "com.amazonaws.servicecatalogappregistry#UpdateApplication": {
             "type": "operation",
@@ -2221,6 +3566,9 @@
                     "target": "com.amazonaws.servicecatalogappregistry#ResourceNotFoundException"
                 },
                 {
+                    "target": "com.amazonaws.servicecatalogappregistry#ThrottlingException"
+                },
+                {
                     "target": "com.amazonaws.servicecatalogappregistry#ValidationException"
                 }
             ],
@@ -2239,7 +3587,7 @@
                 "application": {
                     "target": "com.amazonaws.servicecatalogappregistry#ApplicationSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the application that will be updated.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the application \n       that will be updated.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
@@ -2259,6 +3607,9 @@
                         "smithy.api#documentation": "<p>The new description of the application.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#UpdateApplicationResponse": {
@@ -2270,6 +3621,9 @@
                         "smithy.api#documentation": "<p>The updated information of the application.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#UpdateAttributeGroup": {
@@ -2309,7 +3663,7 @@
                 "attributeGroup": {
                     "target": "com.amazonaws.servicecatalogappregistry#AttributeGroupSpecifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The name or ID of the attribute group that holds the attributes to describe the application.</p>",
+                        "smithy.api#documentation": "<p>\n       The name, ID, or ARN \n       of the attribute group \n       that holds the attributes \n       to describe the application.\n     </p>",
                         "smithy.api#httpLabel": {},
                         "smithy.api#required": {}
                     }
@@ -2335,6 +3689,9 @@
                         "smithy.api#documentation": "<p>A JSON string in the form of nested key-value pairs that represent the attributes in the group and describes an application and its components.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#UpdateAttributeGroupResponse": {
@@ -2346,6 +3703,9 @@
                         "smithy.api#documentation": "<p>The updated information of the attribute group.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.servicecatalogappregistry#ValidationException": {

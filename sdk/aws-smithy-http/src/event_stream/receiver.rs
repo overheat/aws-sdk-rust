@@ -3,19 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use crate::body::SdkBody;
-use crate::result::{ConnectorError, SdkError};
 use aws_smithy_eventstream::frame::{
     DecodedFrame, Message, MessageFrameDecoder, UnmarshallMessage, UnmarshalledMessage,
 };
+use aws_smithy_runtime_api::client::result::{ConnectorError, SdkError};
+use aws_smithy_types::body::SdkBody;
 use bytes::Buf;
 use bytes::Bytes;
 use bytes_utils::SegmentedBuf;
-use hyper::body::HttpBody;
+use http_body::Body;
 use std::error::Error as StdError;
 use std::fmt;
 use std::marker::PhantomData;
 use std::mem;
+use tracing::trace;
 
 /// Wrapper around SegmentedBuf that tracks the state of the stream.
 #[derive(Debug)]
@@ -96,34 +97,38 @@ pub enum RawMessage {
     Invalid(Option<Bytes>),
 }
 
-impl From<&mut SegmentedBuf<Bytes>> for RawMessage {
-    fn from(buf: &mut SegmentedBuf<Bytes>) -> Self {
+impl RawMessage {
+    pub(crate) fn invalid(buf: &mut SegmentedBuf<Bytes>) -> Self {
         Self::Invalid(Some(buf.copy_to_bytes(buf.remaining())))
     }
 }
 
 #[derive(Debug)]
-#[non_exhaustive]
-pub enum Error {
+enum ReceiverErrorKind {
     /// The stream ended before a complete message frame was received.
-    #[non_exhaustive]
     UnexpectedEndOfStream,
 }
 
-impl fmt::Display for Error {
+/// An error that occurs within an event stream receiver.
+#[derive(Debug)]
+pub struct ReceiverError {
+    kind: ReceiverErrorKind,
+}
+
+impl fmt::Display for ReceiverError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UnexpectedEndOfStream => write!(f, "unexpected end of stream"),
+        match self.kind {
+            ReceiverErrorKind::UnexpectedEndOfStream => write!(f, "unexpected end of stream"),
         }
     }
 }
 
-impl StdError for Error {}
+impl StdError for ReceiverError {}
 
 /// Receives Smithy-modeled messages out of an Event Stream.
 #[derive(Debug)]
 pub struct Receiver<T, E> {
-    unmarshaller: Box<dyn UnmarshallMessage<Output = T, Error = E> + Send>,
+    unmarshaller: Box<dyn UnmarshallMessage<Output = T, Error = E> + Send + Sync>,
     decoder: MessageFrameDecoder,
     buffer: RecvBuf,
     body: SdkBody,
@@ -138,7 +143,7 @@ pub struct Receiver<T, E> {
 impl<T, E> Receiver<T, E> {
     /// Creates a new `Receiver` with the given message unmarshaller and SDK body.
     pub fn new(
-        unmarshaller: impl UnmarshallMessage<Output = T, Error = E> + Send + 'static,
+        unmarshaller: impl UnmarshallMessage<Output = T, Error = E> + Send + Sync + 'static,
         body: SdkBody,
     ) -> Self {
         Receiver {
@@ -155,15 +160,11 @@ impl<T, E> Receiver<T, E> {
         match self.unmarshaller.unmarshall(&message) {
             Ok(unmarshalled) => match unmarshalled {
                 UnmarshalledMessage::Event(event) => Ok(Some(event)),
-                UnmarshalledMessage::Error(err) => Err(SdkError::ServiceError {
-                    err,
-                    raw: RawMessage::Decoded(message),
-                }),
+                UnmarshalledMessage::Error(err) => {
+                    Err(SdkError::service_error(err, RawMessage::Decoded(message)))
+                }
             },
-            Err(err) => Err(SdkError::ResponseError {
-                err: Box::new(err),
-                raw: RawMessage::Decoded(message),
-            }),
+            Err(err) => Err(SdkError::response_error(err, RawMessage::Decoded(message))),
         }
     }
 
@@ -174,7 +175,7 @@ impl<T, E> Receiver<T, E> {
                 .data()
                 .await
                 .transpose()
-                .map_err(|err| SdkError::DispatchFailure(ConnectorError::io(err)))?;
+                .map_err(|err| SdkError::dispatch_failure(ConnectorError::io(err)))?;
             let buffer = mem::replace(&mut self.buffer, RecvBuf::Empty);
             if let Some(chunk) = next_chunk {
                 self.buffer = buffer.with_partial(chunk);
@@ -191,11 +192,15 @@ impl<T, E> Receiver<T, E> {
                 if let DecodedFrame::Complete(message) = self
                     .decoder
                     .decode_frame(self.buffer.buffered())
-                    .map_err(|err| SdkError::ResponseError {
-                        err: Box::new(err),
-                        raw: RawMessage::Invalid(None), // the buffer has been consumed
+                    .map_err(|err| {
+                        SdkError::response_error(
+                            err,
+                            // the buffer has been consumed
+                            RawMessage::Invalid(None),
+                        )
                     })?
                 {
+                    trace!(message = ?message, "received complete event stream message");
                     return Ok(Some(message));
                 }
             }
@@ -203,10 +208,13 @@ impl<T, E> Receiver<T, E> {
             self.buffer_next_chunk().await?;
         }
         if self.buffer.has_data() {
-            return Err(SdkError::ResponseError {
-                err: Error::UnexpectedEndOfStream.into(),
-                raw: self.buffer.buffered().into(),
-            });
+            trace!(remaining_data = ?self.buffer, "data left over in the event stream response stream");
+            return Err(SdkError::response_error(
+                ReceiverError {
+                    kind: ReceiverErrorKind::UnexpectedEndOfStream,
+                },
+                RawMessage::invalid(self.buffer.buffered()),
+            ));
         }
         Ok(None)
     }
@@ -268,10 +276,10 @@ impl<T, E> Receiver<T, E> {
 #[cfg(test)]
 mod tests {
     use super::{Receiver, UnmarshallMessage};
-    use crate::body::SdkBody;
-    use crate::result::SdkError;
     use aws_smithy_eventstream::error::Error as EventStreamError;
     use aws_smithy_eventstream::frame::{Header, HeaderValue, Message, UnmarshalledMessage};
+    use aws_smithy_runtime_api::client::result::SdkError;
+    use aws_smithy_types::body::SdkBody;
     use bytes::Bytes;
     use hyper::body::Body;
     use std::error::Error as StdError;
@@ -334,7 +342,7 @@ mod tests {
         let chunks: Vec<Result<_, IOError>> =
             vec![Ok(encode_message("one")), Ok(encode_message("two"))];
         let chunk_stream = futures_util::stream::iter(chunks);
-        let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+        let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
         let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
         assert_eq!(
             TestMessage("one".into()),
@@ -355,7 +363,7 @@ mod tests {
             Ok(Bytes::from_static(&[])),
         ];
         let chunk_stream = futures_util::stream::iter(chunks);
-        let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+        let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
         let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
         assert_eq!(
             TestMessage("one".into()),
@@ -376,7 +384,7 @@ mod tests {
             Ok(encode_message("three").split_to(10)),
         ];
         let chunk_stream = futures_util::stream::iter(chunks);
-        let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+        let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
         let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
         assert_eq!(
             TestMessage("one".into()),
@@ -402,7 +410,7 @@ mod tests {
             )),
         ];
         let chunk_stream = futures_util::stream::iter(chunks);
-        let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+        let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
         let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
         assert_eq!(
             TestMessage("one".into()),
@@ -455,7 +463,7 @@ mod tests {
                 ];
 
                 let chunk_stream = futures_util::stream::iter(chunks);
-                let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+                let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
                 let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
                 for payload in &["one", "two", "three", "four", "five", "six", "seven", "eight"] {
                     assert_eq!(
@@ -475,7 +483,7 @@ mod tests {
             Err(IOError::new(ErrorKind::ConnectionReset, FakeError)),
         ];
         let chunk_stream = futures_util::stream::iter(chunks);
-        let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+        let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
         let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
         assert_eq!(
             TestMessage("one".into()),
@@ -496,7 +504,7 @@ mod tests {
             Ok(Bytes::from_static(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])),
         ];
         let chunk_stream = futures_util::stream::iter(chunks);
-        let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+        let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
         let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
         assert_eq!(
             TestMessage("one".into()),
@@ -513,7 +521,7 @@ mod tests {
         let chunks: Vec<Result<_, IOError>> =
             vec![Ok(encode_initial_response()), Ok(encode_message("one"))];
         let chunk_stream = futures_util::stream::iter(chunks);
-        let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+        let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
         let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
         assert!(receiver.try_recv_initial().await.unwrap().is_some());
         assert_eq!(
@@ -527,7 +535,7 @@ mod tests {
         let chunks: Vec<Result<_, IOError>> =
             vec![Ok(encode_message("one")), Ok(encode_message("two"))];
         let chunk_stream = futures_util::stream::iter(chunks);
-        let body = SdkBody::from(Body::wrap_stream(chunk_stream));
+        let body = SdkBody::from_body_0_4(Body::wrap_stream(chunk_stream));
         let mut receiver = Receiver::<TestMessage, EventStreamError>::new(Unmarshaller, body);
         assert!(receiver.try_recv_initial().await.unwrap().is_none());
         assert_eq!(
@@ -540,10 +548,10 @@ mod tests {
         );
     }
 
-    fn assert_send<T: Send>() {}
+    fn assert_send_and_sync<T: Send + Sync>() {}
 
     #[tokio::test]
-    async fn receiver_is_send() {
-        assert_send::<Receiver<(), ()>>();
+    async fn receiver_is_send_and_sync() {
+        assert_send_and_sync::<Receiver<(), ()>>();
     }
 }
